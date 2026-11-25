@@ -21,7 +21,7 @@ namespace OfSfPlayer {
                 case "username_taken":return "账号已注册，可切换到登录。";
                 case "nickname_taken":return "角色名已被使用，请另选一个。";
                 case "registration_closed":return "服主已关闭注册。";
-                case "invalid_username":case "invalid_account":return "账号须为 3–40 位字母、数字、下划线、点或短横线。";
+                case "invalid_username":case "invalid_account":return "账号须为 3–40 位汉字、英文字母、数字、下划线、点或短横线。";
                 case "invalid_password":return "密码长度须为 8–128 个字符。";
                 case "rate_limited":return "操作频繁，请稍后再试。";
                 default:return Get(response,"status")=="429"?"请求过于频繁，请稍后再试。":"区服未完成请求（"+Get(response,"code")+"）。";

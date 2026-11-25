@@ -125,7 +125,7 @@ def inside(root, temp):
             if os.name=="nt":
                 exercise_window(root, temp, cert, key)
             assert accounts.handle({"server":config,"action":"register","username":"captcha_test","password":"public-qa-password","nickname":""})["code"]=="captcha_required"
-            who=dict(username="player_test",password="single-use-test-password")
+            who=dict(username="发行业务UP",password="single-use-test-password")
             assert private("register",nickname="测试玩家",**who)["ok"]
             logged=private("login",**who)
             assert logged["ok"] and logged["nickname"]=="测试玩家"

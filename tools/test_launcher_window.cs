@@ -50,7 +50,7 @@ class LauncherProbe {
             Click("Options");Assert(UI<StackPanel>("SettingsPanel").IsVisible,"settings");
             Click("Test");Ready();Assert(Status().Contains("连接成功"),"saved CA test: "+Status());
             Click("Options");Click("RegisterTab");Assert(UI<TextBox>("Nickname").IsVisible,"register tab");
-            UI<TextBox>("Username").Text="window_fixture";UI<PasswordBox>("Secret").Password="window-test-password";UI<TextBox>("Nickname").Text="界面测试";
+            UI<TextBox>("Username").Text="本地测试OwO";UI<PasswordBox>("Secret").Password="window-test-password";UI<TextBox>("Nickname").Text="界面测试";
             Click("CheckAccount");Ready();Assert(UI<Image>("CaptchaImage").Source!=null,"actual challenge: "+Status());
             UI<TextBox>("Answer").Text="00000";Click("Primary");Ready();Assert(Status().Contains("新图片"),"reject incorrect answer: "+Status());
             Click("RefreshCaptcha");Ready();UI<TextBox>("Answer").Text="23456";Click("Primary");Ready();

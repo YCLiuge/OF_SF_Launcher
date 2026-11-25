@@ -8,9 +8,9 @@ import zipfile
 def backup(folder):
     folder.mkdir()
     marker="unrelated-private-test-data"
-    main={"status":{"v":1},"level":2,"exp":1,"world_level":0,"player_id":9067314,"player_name":"群星校验",
+    main={"status":{"v":1},"level":2,"exp":1,"world_level":0,"player_id":3128407,"player_label":9067314,"player_name":"群星校验",
           "pet_instance_id":986654322}
-    data={"format":"overfield-snapshot/1","account":{"session":marker,"uid":marker,"username":marker,"playerId":9067314,"playerName":"群星校验"},"endpoint":marker,
+    data={"format":"overfield-snapshot/1","account":{"session":marker,"uid":marker,"username":marker,"playerId":3128407,"playerLabel":9067314,"playerName":"群星校验"},"endpoint":marker,
           "decoded":{"main":{"name":"PlayerMainDataRsp","frames":[{"ok":True,"decoded":main}]}},
           "stats":{"other":marker}}
     pet={"item_id":200001009,"instance_id":986654322,"name":"测试云朵","level":1,"nature_id":132,
@@ -39,9 +39,9 @@ def privacy(accounts,folder):
     def capture(config,verb,path,fields=None,max_bytes=0):
         if verb=="GET":
             assert path=="/local/v1/region" and fields is None
-            return 200,{"realm":accounts.PRIVATE_REALM,"save_import_features":["pets","field_progress"]}
+            return 200,{"realm":accounts.PRIVATE_REALM,"save_import_features":["pets","field_progress","public_uid_label"]}
         assert verb=="POST" and path=="/local/v1/accounts/import-preview"
-        assert fields=={"import_ticket":token,"data":expected}
+        assert fields=={"import_ticket":token,"data":dict(expected,identity={"public_label":9067314,"nickname":"群星校验"})}
         assert "unrelated-private-test-data" not in json.dumps(fields)
         assert "986654322" not in json.dumps(fields)
         return 200,{"ok":True,"eligible":True,"counts":{"角色":1},"warnings":[],"preview_id":preview}
