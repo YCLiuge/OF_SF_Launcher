@@ -14,6 +14,8 @@ Windows 10/11 x64 原生 WPF 登陆器。使用已安装的 TapTap PC 1.1.12，�
 
 需要 Windows x64、Python 3.11+、.NET SDK **9.0.306**、.NET Framework 4.8 Developer Pack，以及配套服务端仓库中的运行时和国服资源。使用本地提供的 `poster112_绿荫小憩.png`，构建脚本会核验原画摘要。服务端资源和依赖的导入步骤见 [OF_SF 构建文档](https://github.com/YCLiuge/OF_SF/blob/main/tools/BUILD.md)。
 
+本次发行使用服务端提交 [`c60e6f1`](https://github.com/YCLiuge/OF_SF/commit/c60e6f1417c7f2bc42304c7190013f9a2adf4cc3)；在独立的构建检出中选择该版本，可复现相同的源码组合。
+
 ```powershell
 py -3 tools/package_player_patch.py --server-checkout ../OF_SF --artwork "素材目录/poster112_绿荫小憩.png" --output dist/OF_SF-Launcher-1.1.12-Windows-x64.zip
 py -3 tools/test_player_patch.py --server-checkout ../OF_SF --archive dist/OF_SF-Launcher-1.1.12-Windows-x64.zip
