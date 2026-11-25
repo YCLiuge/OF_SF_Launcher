@@ -151,12 +151,13 @@ def inside(root, temp):
                         assert main.player_id==1000001 and main.player_name=="测试玩家"
                         break
                 else:raise AssertionError("missing role data over public game TLS")
-            # Use a second authentic session so gameplay travels through the actual client-side adapter.
+            # Reconnect this authenticated role through the same packaged game adapter.
             sys.path.insert(0,str(Path(__file__).resolve().parent))
             from test_player_remote_features import run as features
-            signed=private("login",**who)
-            print("Checking authenticated native gameplay",flush=True)
-            features(remote,remote.reserve(signed["slot"],signed["ticket"]),state,config,accounts)
+            resumed=remote.resume(grant)
+            assert resumed.slot==grant.slot and resumed.resume_token!=grant.resume_token
+            print("Checking same-role TLS reconnect and authenticated native gameplay",flush=True)
+            features(remote,resumed,state,config,accounts)
             print("Checking private backup preview, apply and undo",flush=True)
             over_tls(accounts,private,config,archive,who,state)
             assert accounts.request(config,"GET","/private/maintenance")[0]==200

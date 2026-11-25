@@ -4,6 +4,8 @@ Windows 10/11 x64 原生 WPF 登陆器。使用已安装的 TapTap PC 1.1.12，�
 
 [下载 Windows x64 登陆器（EXE）](https://github.com/YCLiuge/OF_SF_Launcher/releases/latest/download/OF_SF-Launcher-Windows-x64.exe) · [便携 ZIP 和 SHA-256 校验文件](https://github.com/YCLiuge/OF_SF_Launcher/releases/latest)
 
+`v1.1.12-r2` 支持同一游戏进程在掉线后两分钟内自动重连原角色。请同时更新区服与登陆器。Windows 文件属性中的版本号为 `1.1.12.2`。
+
 ## 开始游玩
 
 双击 `OF_SF 登陆器.exe`，首次运行会在旁边的同名目录准备文件。升级时把 EXE 放到原版登陆器文件夹的上一级，可直接沿用连接、工作目录和已准备的游戏。也可以将 `OF_SF-Launcher-1.1.12-Windows-x64.zip` 完整解压并启动里面的 EXE。填写服主提供的 IP、域名或 HTTPS 地址，可指定端口，默认 **18443**。
@@ -16,7 +18,7 @@ Windows 10/11 x64 原生 WPF 登陆器。使用已安装的 TapTap PC 1.1.12，�
 
 需要 Windows x64、Python 3.11+、.NET SDK **9.0.306**、.NET Framework 4.8 Developer Pack，以及配套服务端仓库中的运行时和国服资源。使用本地提供的 `poster112_绿荫小憩.png`，构建脚本会核验原画摘要。服务端资源和依赖的导入步骤见 [OF_SF 构建文档](https://github.com/YCLiuge/OF_SF/blob/main/tools/BUILD.md)。
 
-本次发行使用服务端提交 [`c60e6f1`](https://github.com/YCLiuge/OF_SF/commit/c60e6f1417c7f2bc42304c7190013f9a2adf4cc3)；在独立的构建检出中选择该版本，可复现相同的源码组合。
+构建 `v1.1.12-r2` 请检出配套服务端版本。[OF_SF d4a6f6c](https://github.com/YCLiuge/OF_SF/commit/d4a6f6caf4d201221b16f9249a4e6215ba0d19b6)
 
 ```powershell
 py -3 tools/package_player_patch.py --server-checkout ../OF_SF --artwork "素材目录/poster112_绿荫小憩.png" --output dist/OF_SF-Launcher-1.1.12-Windows-x64.zip

@@ -66,7 +66,8 @@ def build(repo, output, *, artwork, server_checkout=None):
     with tempfile.TemporaryDirectory(prefix=".of-player-",dir=output.parent) as work:
         temp=Path(work)
         exe=temp/TITLE
-        subprocess.run([*compiler_arguments(),"/out:"+str(exe),
+        version_source=str(repo/"client_tools/sources/ReleaseVersion.cs")
+        subprocess.run([*compiler_arguments(),version_source,"/out:"+str(exe),
                         "/resource:"+str(artwork)+",Illustration.png",
                         "/resource:"+str(repo/"client_tools/sources/LauncherWindow.xaml")+",LauncherWindow.xaml",
                         str(repo/"client_tools/sources/PlayerPatch.cs"),
@@ -106,7 +107,7 @@ def build(repo, output, *, artwork, server_checkout=None):
             add(INDEX,json.dumps({"version":1,"files":per_file},ensure_ascii=False,sort_keys=True).encode())
         standalone=temp/"portable"/TITLE
         standalone.parent.mkdir()
-        subprocess.run([*compiler_arguments(),"/out:"+str(standalone),"/resource:"+str(target)+",OF_SF.zip",
+        subprocess.run([*compiler_arguments(),version_source,"/out:"+str(standalone),"/resource:"+str(target)+",OF_SF.zip",
                         str(repo/"client_tools/sources/PortableEntry.cs")],check=True)
         executable=output.parent/TITLE
         digest_exe=hashlib.sha256(standalone.read_bytes()).hexdigest()
