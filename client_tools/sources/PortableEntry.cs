@@ -76,6 +76,34 @@ namespace OfSfPortable {
                 var list=archive.GetEntry(Index);using(var raw=list.Open())sha=Digest(raw);InstallFile(index,list,sha);
             }
         }
+        static string InstallationFolder(){
+            string parent=AppDomain.CurrentDomain.BaseDirectory;
+            string standard=Path.GetFullPath(Path.Combine(parent,"OF_SF 登陆器"));
+            if(Directory.Exists(standard))return standard;
+            if(Owned(parent))throw new IOException("升级已有安装时，请把单文件 EXE 放到原文件夹的上一级再运行，或在此目录完整解压 ZIP。连接和游戏副本会沿用。");
+            var candidates=new List<string>();
+            foreach(var child in Directory.EnumerateDirectories(parent)){
+                try{
+                    if((File.GetAttributes(child)&FileAttributes.ReparsePoint)!=0||!File.Exists(Path.Combine(child,Index))||
+                       !File.Exists(Path.Combine(child,"player-settings.json")))continue;
+                    CheckOrdinary(Path.Combine(child,Marker));CheckOrdinary(Path.Combine(child,Index));
+                    if(Owned(child))candidates.Add(child);
+                }catch(UnauthorizedAccessException){continue;}
+                if(candidates.Count>1)break;
+            }
+            if(candidates.Count==1)return candidates[0];
+            if(candidates.Count>1){
+                using(var picker=new FolderBrowserDialog{Description="找到多个已有登陆器。选择要升级的目录，或取消以创建独立安装。",SelectedPath=parent}){
+                    if(picker.ShowDialog()==DialogResult.OK){
+                        string selected=Path.GetFullPath(picker.SelectedPath);
+                        if(!String.Equals(Path.GetDirectoryName(selected),Path.GetFullPath(parent).TrimEnd(Path.DirectorySeparatorChar),
+                            StringComparison.OrdinalIgnoreCase)||!Owned(selected))throw new IOException("请选择此处已有的 OF_SF 玩家目录。");
+                        return selected;
+                    }
+                }
+            }
+            return standard;
+        }
         static string Quote(string arg){
             var result=new StringBuilder("\"");int slashes=0;
             foreach(char c in arg){
@@ -87,7 +115,7 @@ namespace OfSfPortable {
         }
         [STAThread] static int Main(string[] args){
             try{
-                var root=Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"OF_SF 登陆器"));
+                var root=InstallationFolder();
                 string lockName;using(var hash=SHA256.Create())lockName="Local\\OF_SF_Install_"+Hex(hash.ComputeHash(Encoding.UTF8.GetBytes(root.ToUpperInvariant())));
                 using(var sync=new Mutex(false,lockName)){
                     bool taken=false;
