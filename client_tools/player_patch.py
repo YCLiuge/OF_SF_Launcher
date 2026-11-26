@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT / "client_tools"))
 sys.path.insert(0,str(ROOT / "OverField-Server/app"))
 from player_tls_channels import player_address
-from prepare_client import save
+from prepare_client import installed_source, save
 from native_launch import changing, is_running, stop_owned
 
 STAMP = ".of-player-patch.json"
@@ -60,7 +60,7 @@ def digest(path):
 
 def choose_home(root, source, base):
     if not source.is_dir() or not (source/"launcher.exe").is_file():
-        raise ValueError("请选择含 launcher.exe 的 TapTap 国服 1.1.12 安装目录。")
+        raise ValueError("请选择已通过验证的《开放空间》国服 1.1.12 安装目录。")
     if base:
         base = Path(base).resolve()
         if not base.is_dir():
@@ -241,7 +241,7 @@ def main():
         (ROOT/PREFS).unlink(missing_ok=True)
         print("已停止本补丁的服务并清除游戏副本和本机设置。可删除解压目录及独立工作目录。")
         return
-    source=Path(data["source"]).resolve()
+    source=installed_source(data["source"])
     home=choose_home(ROOT,source,data.get("base",""))
     address=player_address(data["publicTls"])
     ca_file=data.get("caFile","").strip()

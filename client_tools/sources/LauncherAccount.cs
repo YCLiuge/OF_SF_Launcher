@@ -22,6 +22,7 @@ namespace OfSfPlayer {
                 case "nickname_taken":return "角色名已被使用，请另选一个。";
                 case "registration_closed":return "服主已关闭注册。";
                 case "invalid_username":case "invalid_account":return "账号须为 3–40 位汉字、英文字母、数字、下划线、点或短横线。";
+                case "password_unchanged":return "新密码须与当前密码不同。";
                 case "invalid_password":return "密码长度须为 8–128 个字符。";
                 case "rate_limited":return "操作频繁，请稍后再试。";
                 default:return Get(response,"status")=="429"?"请求过于频繁，请稍后再试。":"区服未完成请求（"+Get(response,"code")+"）。";
@@ -55,6 +56,11 @@ namespace OfSfPlayer {
                 string digest=Get(result,"fingerprint");
                 if(digest.Length!=64||!ConfirmFingerprint(Get(result,"address"),digest))throw new IOException("已取消连接。");
                 input["fingerprint"]=digest; result=await Json("player_connection.py",input);
+                if(Flag(result,"ok")&&C<CheckBox>("Remember").IsChecked==true){
+                    C<CheckBox>("Remember").IsChecked=false;
+                    C<PasswordBox>("Secret").Clear();
+                    ResetIdentity();
+                }
             }
             if(!Flag(result,"ok"))throw new IOException(Error(result));
             var box=C<ComboBox>("Endpoint");string display=DisplayAddress(Get(result,"publicTls"));
@@ -98,10 +104,40 @@ namespace OfSfPlayer {
                 }
                 ClearChallenge();throw new IOException(Error(receipt));
             }
+            try{RememberSuccess(C<PasswordBox>("Secret").Password);}
+            catch(Exception){Status("账号已验证。Windows 无法保存本次账号设置。");}
             C<PasswordBox>("Secret").Clear();session=receipt;
             int ttl;Int32.TryParse(Get(receipt,"expires_in"),out ttl);playUntil=DateTime.UtcNow.AddSeconds(Math.Min(Math.Max(0,ttl),86400));
             Int32.TryParse(Get(receipt,"import_expires_in"),out ttl);importUntil=DateTime.UtcNow.AddSeconds(Math.Min(Math.Max(0,ttl),900));
             ClearChallenge();SetMode(false,true);return true;
+        }
+        async Task UpdatePassword(){
+            if(!Flag(connection,"passwordChange"))throw new IOException("此区服尚未支持玩家修改密码，请联系管理员。");
+            string next=C<PasswordBox>("NewPassword").Password;
+            string old=C<PasswordBox>("Secret").Password;
+            if(old.Length==0)throw new IOException("请输入当前密码。");
+            int length=next.Count(c=>!Char.IsLowSurrogate(c));
+            if(length<8||length>128)throw new IOException("新密码长度须为 8–128 个字符。");
+            if(next==old)throw new IOException("新密码须与当前密码不同。");
+            if(next!=C<PasswordBox>("ConfirmPassword").Password)throw new IOException("两次输入的新密码不一致。");
+            var data=new Data{{"username",TextOf("Username")},{"password",old},{"new_password",next}};
+            if(challenge!=""&&purpose=="change-password"){
+                if(TextOf("Answer")==""){Status("请填写验证码。");return;}
+                data["challenge_id"]=challenge;data["answer"]=TextOf("Answer");
+            }
+            var reply=await Api("change-password",data);
+            if(!Flag(reply,"ok")){
+                if(Get(reply,"code")=="captcha_required"||Get(reply,"code")=="captcha_invalid"){
+                    await NewChallenge("change-password","change-password");return;
+                }
+                throw new IOException(Error(reply));
+            }
+            C<PasswordBox>("Secret").Clear();SetPasswordMode(false);ResetIdentity();
+            try{RememberSuccess(next);}catch(Exception){
+                Status("密码已修改，请用新密码登录。Windows 本机账号记录更新失败。");return;
+            }
+            if(C<CheckBox>("Remember").IsChecked==true)C<PasswordBox>("Secret").Password=next;
+            Status("密码已修改，请用新密码重新登录。");
         }
         async void Run(string action) {
             if(busy)return;
@@ -118,6 +154,7 @@ namespace OfSfPlayer {
                 if(action=="test"||action=="renew"){Status("连接成功，已验证此区服的证书和账号服务。");ShowSettings(true);return;}
                 if(action=="save"){await Execute("player_patch.py","save",Config(),false);ShowSettings(false);Status("连接和目录已保存。");return;}
                 if(TextOf("Username")=="")throw new IOException("请输入区服账号。");
+                if(action=="change-password"){await UpdatePassword();return;}
                 if(action=="refresh"){if(pending!="")await NewChallenge(purpose,pending);return;}
                 if(action=="check"){
                     if(!Flag(connection,"lookup")){Status("此版本的区服不支持检查账号，可直接登录。");return;}
@@ -144,7 +181,7 @@ namespace OfSfPlayer {
                     Status("已返回登陆器，可继续进入游戏。");return;
                 }
                 var config=Config();
-                if(!File.Exists(Path.Combine(TextOf("Source"),"launcher.exe"))){ShowSettings(true);throw new IOException("请选择含 launcher.exe 的原游戏目录，再返回进入游戏。");}
+                if(!Directory.Exists(TextOf("Source"))){ShowSettings(true);throw new IOException("选择游戏已安装的 Windows 客户端目录。");}
                 Status("正在检查游戏文件，首次准备可能需要几分钟…");
                 await Execute("player_patch.py","prepare",config,false);
                 config["account"]=new Data{{"slot",Get(session,"slot")},{"ticket",Get(session,"ticket")}};

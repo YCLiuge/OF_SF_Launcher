@@ -100,7 +100,8 @@ def connect(root, form):
     if status != 200 or region.get("realm") != PRIVATE_REALM:
         return {"ok":False,"code":"wrong_realm","message":"此端口未提供兼容的 OF_SF 玩家区服。"}
     remember(root,address,ca)
-    return {"ok":True, **config, "lookup":"captcha_lookup_v1" in (region.get("account_features") or [])}
+    features=region.get("account_features") or []
+    return {"ok":True, **config, "lookup":"captcha_lookup_v1" in features, "passwordChange":"password_change_v1" in features}
 
 
 def main():

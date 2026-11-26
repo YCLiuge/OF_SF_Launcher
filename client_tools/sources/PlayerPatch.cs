@@ -26,9 +26,15 @@ namespace OfSfPlayer {
         bool busy, registering, inSettings, normalizingEndpoint;
         string caOverride="", verifiedInput="", proof="", challenge="", purpose="", pending="";
         Data connection, session;
+        readonly RealmAccounts accounts;
+        bool filling, changingPassword;
+        string shownRealm="",filledUser="";
         DateTime playUntil, importUntil;
 
-        internal PlayerWindow(bool selectRealm, bool reconnecting, bool demonstration) {
+        internal PlayerWindow(bool selectRealm, bool reconnecting, bool demonstration)
+            : this(selectRealm,reconnecting,demonstration,@"Software\OF_SF\RealmAccounts") {}
+        internal PlayerWindow(bool selectRealm, bool reconnecting, bool demonstration, string memoryBranch) {
+            accounts=new RealmAccounts(memoryBranch);
             picker=selectRealm; reconnect=reconnecting; demo=demonstration;
             Title="登陆器"; Width=1000; Height=646; MinWidth=780; MinHeight=540;
             WindowStartupLocation=WindowStartupLocation.CenterScreen;
@@ -40,19 +46,42 @@ namespace OfSfPlayer {
                 var crop=new CroppedBitmap(bitmap,new Int32Rect(0,300,2048,1452));crop.Freeze();
                 C<Image>("Artwork").Source=crop;
             }
-            Click("LoginTab",()=>SetMode(false,false)); Click("RegisterTab",()=>SetMode(true,false));
+            Click("LoginTab",()=>{SetPasswordMode(false);SetMode(false,false);}); Click("RegisterTab",()=>{SetPasswordMode(false);SetMode(true,false);});
             Click("Options",()=>ShowSettings(!inSettings)); Click("AcceptSettings",()=>Run("save"));
             Click("SourceBrowse",()=>Browse("Source")); Click("BaseBrowse",()=>Browse("Work"));
             Click("SelectCa",SelectCa); Click("Test",()=>Run("test")); Click("Reverify",()=>Run("renew"));
             Click("ClearWork",()=>Run("uninstall")); Click("CheckAccount",()=>Run("check"));
             Click("RefreshCaptcha",()=>Run("refresh")); Click("ImportSave",()=>Run("import"));
-            Click("Primary",()=>Run(pending!=""?pending:registering?"register":"play"));
-            C<TextBox>("Username").TextChanged+=delegate {ResetIdentity();};
-            C<ComboBox>("Endpoint").AddHandler(TextBox.TextChangedEvent,new TextChangedEventHandler(delegate{
-                if(!normalizingEndpoint){caOverride="";C<PasswordBox>("Secret").Clear();InvalidateConnection();}
+            Click("Primary",()=>Run(changingPassword?"change-password":pending!=""?pending:registering?"register":"play"));
+            Click("Forgot",()=>Status("请联系管理员修改密码"));
+            Click("ChangePassword",()=>{SetMode(false,true);SetPasswordMode(!changingPassword);});
+            C<CheckBox>("Remember").Unchecked+=delegate{
+                if(!filling){
+                    try{
+                        var saved=accounts.Read(shownRealm);
+                        accounts.ForgetPassword(shownRealm);
+                        if(saved[0]==TextOf("Username")&&saved[1]!=""&&saved[1]==C<PasswordBox>("Secret").Password)
+                            C<PasswordBox>("Secret").Clear();
+                    }catch(Exception){Status("无法清除 Windows 中的已保存密码。");}
+                }
+            };
+            C<TextBox>("Username").TextChanged+=delegate {
+                ResetIdentity();
+                if(!filling&&filledUser!=""&&filledUser!=TextOf("Username")){
+                    filling=true;
+                    try{C<PasswordBox>("Secret").Clear();C<CheckBox>("Remember").IsChecked=false;filledUser="";}
+                    finally{filling=false;}
+                }
+            };
+            C<ComboBox>("Endpoint").AddHandler(TextBox.TextChangedEvent,new TextChangedEventHandler(delegate(object sender,TextChangedEventArgs args){
+                if(!normalizingEndpoint){
+                    caOverride="";InvalidateConnection();
+                    var edit=args.OriginalSource as TextBox;
+                    FillAccount(RealmAccounts.Endpoint(edit==null?Address:edit.Text));
+                }
             }));
             Closing+=delegate(object s,System.ComponentModel.CancelEventArgs e){if(busy)e.Cancel=true;};
-            SetMode(false,true); if(!demo)Restore();
+            SetMode(false,true); if(!demo){Restore();FillAccount(RealmAccounts.Endpoint(Address));}
             if(reconnect) Status("连接已中断。请重新登录当前区服以返回游戏。");
         }
         T C<T>(string key) where T:FrameworkElement{return (T)view.FindName(key);}
@@ -74,6 +103,13 @@ namespace OfSfPlayer {
         }
         void SetMode(bool reg,bool keep){
             if(!keep&&registering!=reg)ResetIdentity();
+            if(!keep&&registering!=reg){
+                C<PasswordBox>("Secret").Clear();
+                if(reg){
+                    filling=true;try{C<CheckBox>("Remember").IsChecked=false;}finally{filling=false;}
+                    C<TextBox>("Username").Clear();
+                }else {registering=false;FillAccount(shownRealm,true);}
+            }
             registering=reg;
             C<StackPanel>("NamePanel").Visibility=reg?Visibility.Visible:Visibility.Collapsed;
             C<TextBlock>("Heading").Text=reg?"创建账号":reconnect?"重新登录":"账号登录";
@@ -83,9 +119,40 @@ namespace OfSfPlayer {
             }
             Caption();
         }
+        void FillAccount(string realm,bool reload=false){
+            if(!reload&&realm==shownRealm)return;
+            filling=true;
+            try{
+                shownRealm=realm;filledUser="";
+                C<TextBox>("Username").Clear();C<PasswordBox>("Secret").Clear();
+                C<PasswordBox>("NewPassword").Clear();C<PasswordBox>("ConfirmPassword").Clear();
+                C<CheckBox>("Remember").IsChecked=false;
+                string[] saved=accounts.Read(realm);
+                C<TextBox>("Username").Text=saved[0];filledUser=saved[0];
+                if(!registering&&saved[1]!=""){C<PasswordBox>("Secret").Password=saved[1];C<CheckBox>("Remember").IsChecked=true;}
+            }catch(Exception){Status("无法读取 Windows 中的区服账号，请手动输入。");}
+            finally{filling=false;}
+        }
+        void SetPasswordMode(bool enabled){
+            if(changingPassword==enabled)return;
+            changingPassword=enabled;ResetIdentity();SetMode(false,true);
+            C<PasswordBox>("NewPassword").Clear();C<PasswordBox>("ConfirmPassword").Clear();
+            C<StackPanel>("NewPasswordPanel").Visibility=enabled?Visibility.Visible:Visibility.Collapsed;
+            C<TextBlock>("PasswordLabel").Text=enabled?"当前密码":"密码";
+            C<Button>("ChangePassword").Content=enabled?"返回登录":"修改密码";
+            C<Button>("ImportSave").Visibility=enabled?Visibility.Collapsed:Visibility.Visible;
+            C<Button>("CheckAccount").Visibility=enabled?Visibility.Collapsed:Visibility.Visible;
+            if(enabled)C<TextBlock>("Heading").Text="修改密码";
+            Caption();
+        }
+        void RememberSuccess(string secret){
+            accounts.Save(RealmAccounts.Endpoint(DisplayAddress(Get(connection,"publicTls"))),
+                          TextOf("Username"),C<CheckBox>("Remember").IsChecked==true?secret:"");
+            filledUser=TextOf("Username");
+        }
         static Brush Brush(string color){return (Brush)new BrushConverter().ConvertFromString(color);}
         void Caption(){
-            C<Button>("Primary").Content=pending=="check"?"验证并检查账号":pending=="import"?"验证并打开存档":registering?"注册账号":reconnect?"重新登录并进入游戏":picker?"登录并切换区服":"登录并进入游戏";
+            C<Button>("Primary").Content=changingPassword?"确认修改密码":pending=="check"?"验证并检查账号":pending=="import"?"验证并打开存档":registering?"注册账号":reconnect?"重新登录并进入游戏":picker?"登录并切换区服":"登录并进入游戏";
         }
         void ClearChallenge(){
             challenge="";purpose="";pending="";C<TextBox>("Answer").Clear();
@@ -129,6 +196,7 @@ namespace OfSfPlayer {
         }
         void Browse(string id){
             using(var box=new Forms.FolderBrowserDialog()){
+                box.Description=id=="Source"?"选择游戏安装目录或渠道启动器目录":"选择私服工作目录";
                 if(Directory.Exists(TextOf(id)))box.SelectedPath=TextOf(id);
                 if(box.ShowDialog(new DialogOwner(this))==Forms.DialogResult.OK)C<TextBox>(id).Text=box.SelectedPath;
             }

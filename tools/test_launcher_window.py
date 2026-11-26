@@ -58,31 +58,40 @@ def exercise_window(root,temp,cert,key):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self,*args):pass
         def handle(self):
-            if self.rfile.readline(64)==b"OF-SF/1 ACCOUNT\n":
+            try:
+                preface=self.rfile.readline(64)
+            except ConnectionResetError:
+                return  # A certificate-only probe may close without opening an account channel.
+            if preface==b"OF-SF/1 ACCOUNT\n":
                 super().handle()
         def reply(self,status,data):
             blob=json.dumps(data).encode()
             self.send_response(status);self.send_header("Content-Type","application/json")
             self.send_header("Content-Length",str(len(blob)));self.end_headers();self.wfile.write(blob)
         def do_GET(self):
-            self.reply(200,{"realm":"overfield-local-v1","account_features":["captcha_lookup_v1"]})
+            self.reply(200,{"realm":"overfield-local-v1","account_features":["captcha_lookup_v1","password_change_v1"]})
         def do_POST(self):
             body=json.loads(self.rfile.read(int(self.headers["Content-Length"])))
             try:
-                result=accounts.request(self.path,body,"127.0.0.1","127.0.0.1",True,True,gateway_source="window-fixture")
+                result=self.server.accounts.request(self.path,body,"127.0.0.1","127.0.0.1",True,True,gateway_source="window-fixture")
                 if self.path.rsplit("/",1)[-1] in ("login","register"):
                     result.update(import_ticket="ofi_"+"a"*43,import_expires_in=300)
                 self.reply(200,result)
             except AccountError as error:self.reply(error.status,{"error":error.code})
     context=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER);context.load_cert_chain(cert,key)
-    with ThreadingHTTPServer(("127.0.0.1",0),Handler) as http:
+    with ThreadingHTTPServer(("127.0.0.1",0),Handler) as http, ThreadingHTTPServer(("127.0.0.1",0),Handler) as second_http:
+        http.accounts=accounts
+        second_http.accounts=AccountService(LocalIdentity(temp/"wpf-other-realm.sqlite"))
+        second_http.socket=context.wrap_socket(second_http.socket,server_side=True)
+        other_work=Thread(target=second_http.serve_forever,daemon=True);other_work.start()
+        alternate="https://localhost:"+str(second_http.server_port)
         http.socket=context.wrap_socket(http.socket,server_side=True)
         work=Thread(target=http.serve_forever,daemon=True);work.start()
         url="https://localhost:"+str(http.server_port)
         prefs=root/"player-settings.json"
         original=prefs.read_bytes() if prefs.is_file() else None
         prefs.write_text(json.dumps({"source":str(temp/"Original"),"base":"","publicTls":url,"caFile":str(cert),
-                         "servers":[{"publicTls":url,"caFile":str(cert)}]}),encoding="utf8")
+                         "servers":[{"publicTls":url,"caFile":str(cert)},{"publicTls":alternate,"caFile":str(cert)}]}),encoding="utf8")
         try:
             rotation=temp/"rotation-profile";rotation.mkdir()
             with patch.dict(os.environ, LOCALAPPDATA=str(rotation)):
@@ -103,8 +112,14 @@ def exercise_window(root,temp,cert,key):
             # Only this in-process test issuer uses deterministic challenge text. The binary and player CLI are unmodified.
             answers=itertools.cycle("23456")
             with patch.object(player_captcha.secrets,"choice",side_effect=lambda choices:next(answers)):
-                subprocess.run([str(binary)],check=True,timeout=95)
+                subprocess.run([str(binary)],check=True,timeout=145,env={**os.environ,"OF_TEST_OTHER_REALM":alternate})
+            import private_account_api
+            transport={"publicTls":url,"caFile":str(cert)}
+            def verify_password(password):
+                return private_account_api.handle({"action":"login","server":transport,"username":"本地测试OwO","password":password})
+            assert verify_password("window-test-password")["code"]=="invalid_credentials"
+            assert verify_password("\U0001f680"*128)["ok"]
         finally:
             if original is None:prefs.unlink(missing_ok=True)
             else:prefs.write_bytes(original)
-            http.shutdown();work.join(5)
+            http.shutdown();work.join(5);second_http.shutdown();other_work.join(5)

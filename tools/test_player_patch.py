@@ -35,6 +35,101 @@ def wait_ready(get, child):
     raise TimeoutError("isolated test service")
 
 
+def source_cases(temp):
+    temp=temp.resolve()
+    import hashlib
+    from unittest.mock import patch as mock
+    import prepare_client as clients
+    import player_patch
+
+    assets = {"launcher.exe":b"retail", "GameAssembly.dll":b"assembly",
+              "launcher_Data/data.unity3d":b"original"}
+    manifest = b"verified test manifest"
+    checksum = lambda value: hashlib.sha256(value).hexdigest()
+
+    def install(root):
+        for name, content in assets.items():
+            (root/name).parent.mkdir(parents=True,exist_ok=True)
+            (root/name).write_bytes(content)
+        (root/"version").write_text(clients.BUILD,encoding="ascii")
+        folder=root/clients.MANIFEST_DIR
+        folder.mkdir(parents=True)
+        (folder/"PackageManifest_DefaultPackage.version").write_text(clients.PATCH,encoding="ascii")
+        (folder/("PackageManifest_DefaultPackage_"+clients.PATCH+".bytes")).write_bytes(manifest)
+        return root
+
+    def denied(action,word):
+        try:
+            action()
+        except ValueError as error:
+            assert word in str(error), error
+        else:
+            raise AssertionError("Incompatible game was accepted")
+
+    with mock.multiple(clients,LAUNCHER=checksum(assets["launcher.exe"]),ASSEMBLY=checksum(assets["GameAssembly.dll"]),
+                       KNOWN_SOURCE=checksum(assets["launcher_Data/data.unity3d"]),MANIFESTS={clients.PATCH:checksum(manifest)}):
+        library=temp/"channel"
+        games=library/"Data/download/games"
+        game=install(games/"11113/install")
+        unrelated=install(games/"42/install")
+        (unrelated/"GameAssembly.dll").write_bytes(b"different game")
+        (library/"launcher.exe").write_bytes(b"channel program")
+        ignored=install(games/"900/cache/install")
+        for folder in (library,library/"Data",library/"Data/download",games,game.parent,game):
+            assert clients.installed_source(folder)==game
+        assert ignored.is_dir()
+        second=install(games/"100/install")
+        denied(lambda:clients.installed_source(library),"多份")
+        (second/"version").write_text("2025-03-21-17-15-05",encoding="ascii")
+        denied(lambda:clients.installed_source(second),"2025-03-21")
+        denied(lambda:clients.installed_source(unrelated),"GameAssembly.dll")
+        assert clients.installed_source(library)==game
+
+        tap=temp/"TapTap"
+        retail=install(tap/"PC Games/176228")
+        assert clients.installed_source(tap)==clients.installed_source(retail.parent)==retail
+        steam=temp/"SteamLibrary"
+        folder=steam/"steamapps"; steam_game=install(folder/"common/Fixture OverField")
+        acf=folder/("appmanifest_"+str(clients.STEAM_APP_ID)+".acf")
+        acf.write_text('"AppState"\n{\n "appid" "3879660"\n "installdir" "Fixture OverField"\n}',encoding="utf8")
+        assert clients.installed_source(steam)==clients.installed_source(folder)==steam_game
+        acf.write_text('"appid" "3879660"\n"installdir" "../elsewhere"',encoding="utf8")
+        denied(lambda:clients.installed_source(steam),"没有找到")
+        if os.name=="nt":
+            import _winapi
+            def link(where,target):_winapi.CreateJunction(str(target),str(where))
+        else:
+            def link(where,target):where.symlink_to(target,target_is_directory=True)
+        alias=temp/"linked"; link(alias,game)
+        denied(lambda:clients.installed_source(alias),"实体目录")
+        junction=games/"1234"; link(junction,second.parent)
+        denied(lambda:clients.installed_source(junction/"install"),"实体目录")
+        assert clients.installed_source(library)==game
+        # Skip alias entries before the temp tree is later removed.
+        for alias in (alias,junction):
+            alias.rmdir() if os.name=="nt" else alias.unlink()
+
+        chosen=(game/clients.MANIFEST_DIR/("PackageManifest_DefaultPackage_"+clients.PATCH+".bytes"))
+        chosen.write_bytes(b"unverified")
+        denied(lambda:clients.prepare(game,temp/"uncreated","http://127.0.0.1:18881",compact_only=True),"资源清单")
+        assert not (temp/"uncreated").exists()
+        owned=temp/"existing";(owned/"Client").mkdir(parents=True)
+        wrong=temp/"another game";wrong.mkdir()
+        denied(lambda:clients.prepare(wrong,owned,"http://127.0.0.1:18881"),"经过校验")
+        source=game/"launcher_Data/data.unity3d"; source.write_bytes(b"altered")
+        chosen.write_bytes(manifest)
+        denied(lambda:clients.installed_source(game),"data.unity3d")
+        # Public player actions must reject the selected game before copying, saving or launching.
+        import io
+        payload=json.dumps({"source":str(game)}).encode()
+        for action in ("save","prepare","launch","relaunch"):
+            with mock.object(player_patch,"known_root"),mock.object(player_patch,"read",return_value={}),mock.object(sys,"argv",["patch",action]), \
+                 mock.object(sys,"stdin",io.TextIOWrapper(io.BytesIO(payload))), \
+                 mock.object(player_patch,"stage",side_effect=AssertionError("unexpected staged files")), \
+                 mock.object(player_patch,"launch",side_effect=AssertionError("unexpected launch")):
+                denied(player_patch.main,"data.unity3d")
+
+
 def inside(root, temp):
     server=root/"OverField-Server"
     sys.path[:0]=[str(root/"client_tools"),str(server/"app"),str(server/"app/upstream")]
@@ -49,6 +144,7 @@ def inside(root, temp):
     from remote_password import RemotePassword
     sys.path.insert(0,str(Path(__file__).resolve().parent))
     from test_player_save_import import privacy,over_tls
+    source_cases(temp/"source-fixture")
     archive=privacy(accounts,temp/"backup-fixture")
 
     print("Checking packaged UI and separate client staging",flush=True)

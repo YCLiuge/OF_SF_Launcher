@@ -35,8 +35,16 @@
             <TextBlock Text="输入 IP 或域名，可加端口（默认 18443）。" Margin="0,4,0,0" FontSize="11" Foreground="#53665B"/>
             <TextBlock Text="账号" Style="{StaticResource Field}"/>
             <DockPanel><Button x:Name="CheckAccount" DockPanel.Dock="Right" Margin="6,0,0,0" Content="检查账号" Padding="9,4"/><TextBox x:Name="Username" MaxLength="64" AutomationProperties.Name="区服账号"/></DockPanel>
-            <TextBlock Text="密码" Style="{StaticResource Field}"/>
-            <PasswordBox x:Name="Secret" MaxLength="128" AutomationProperties.Name="区服密码"/>
+            <TextBlock x:Name="PasswordLabel" Text="密码" Style="{StaticResource Field}"/>
+            <PasswordBox x:Name="Secret" MaxLength="256" AutomationProperties.Name="区服密码"/>
+            <StackPanel x:Name="NewPasswordPanel" Visibility="Collapsed">
+              <TextBlock Text="新密码" Style="{StaticResource Field}"/><PasswordBox x:Name="NewPassword" MaxLength="256" AutomationProperties.Name="新密码"/>
+              <TextBlock Text="再次输入新密码" Style="{StaticResource Field}"/><PasswordBox x:Name="ConfirmPassword" MaxLength="256" AutomationProperties.Name="再次输入新密码"/>
+            </StackPanel>
+            <DockPanel Margin="0,7,0,0">
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><Button x:Name="ChangePassword" Background="Transparent" Padding="5,4" Content="修改密码"/><Button x:Name="Forgot" Background="Transparent" Padding="5,4" Content="忘记密码？"/></StackPanel>
+              <CheckBox x:Name="Remember" VerticalAlignment="Center" Content="记住密码" ToolTip="仅在自己的 Windows 账户中记住此区服密码。"/>
+            </DockPanel>
             <StackPanel x:Name="NamePanel" Visibility="Collapsed"><TextBlock Text="角色名（可选，可在游戏内设置）" Style="{StaticResource Field}"/><TextBox x:Name="Nickname" MaxLength="32" AutomationProperties.Name="注册角色名"/></StackPanel>
             <StackPanel x:Name="CaptchaPanel" Visibility="Collapsed"><TextBlock Text="图片验证码" Style="{StaticResource Field}"/>
               <DockPanel><Image x:Name="CaptchaImage" DockPanel.Dock="Left" Width="114" Height="36" Stretch="Uniform" Margin="0,0,4,0"/><Button x:Name="RefreshCaptcha" DockPanel.Dock="Right" Content="换一张" Margin="5,0,0,0" Padding="7,3"/><TextBox x:Name="Answer" AutomationProperties.Name="验证码答案" MaxLength="12"/></DockPanel>
@@ -46,8 +54,8 @@
           </StackPanel>
           <StackPanel x:Name="SettingsPanel" Visibility="Collapsed">
             <TextBlock Text="登陆器设置" FontSize="26" FontWeight="SemiBold" Margin="0,3,0,5"/>
-            <TextBlock Text="原游戏目录" Style="{StaticResource Field}"/><DockPanel><Button x:Name="SourceBrowse" DockPanel.Dock="Right" Content="浏览" Margin="5,0,0,0"/><TextBox x:Name="Source" AutomationProperties.Name="TapTap 游戏目录"/></DockPanel>
-            <TextBlock Text="选择含 launcher.exe 的 TapTap 安装目录。" TextWrapping="Wrap" Margin="0,4" Foreground="#53665B" FontSize="11"/>
+            <TextBlock Text="原游戏目录" Style="{StaticResource Field}"/><DockPanel><Button x:Name="SourceBrowse" DockPanel.Dock="Right" Content="浏览" Margin="5,0,0,0"/><TextBox x:Name="Source" AutomationProperties.Name="Windows 游戏目录"/></DockPanel>
+            <TextBlock Text="选择游戏已安装的 Windows 客户端目录。" TextWrapping="Wrap" Margin="0,4" Foreground="#53665B" FontSize="11"/>
             <TextBlock Text="工作目录（可选）" Style="{StaticResource Field}"/><DockPanel><Button x:Name="BaseBrowse" DockPanel.Dock="Right" Content="浏览" Margin="5,0,0,0"/><TextBox x:Name="Work" AutomationProperties.Name="工作目录"/></DockPanel>
             <TextBlock Text="与原游戏同盘时可留空，资源通过硬链接复用。" TextWrapping="Wrap" Margin="0,4" Foreground="#53665B" FontSize="11"/>
             <TextBlock Text="当前区服证书" Style="{StaticResource Field}"/><TextBlock x:Name="TrustLabel" Foreground="#40594B" TextWrapping="Wrap" Margin="0,2,0,6"/>
@@ -58,7 +66,7 @@
           </StackPanel>
         </Grid>
       </ScrollViewer>
-      <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="#D5DED5" Padding="0,8,0,0" Margin="0,4,0,0"><TextBlock x:Name="Status" Text="退出后可从 TapTap 进入官服。" TextWrapping="Wrap" Foreground="#4F6458" FontSize="12" AutomationProperties.LiveSetting="Polite"/></Border>
+      <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="#D5DED5" Padding="0,8,0,0" Margin="0,4,0,0"><TextBlock x:Name="Status" Text="退出后可从原渠道启动器进入官服。" TextWrapping="Wrap" Foreground="#4F6458" FontSize="12" AutomationProperties.LiveSetting="Polite"/></Border>
     </Grid>
   </Border>
 </Grid>

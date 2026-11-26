@@ -1,16 +1,16 @@
 # OF_SF 登陆器
 
-Windows 10/11 x64 原生 WPF 登陆器。使用已安装的 TapTap PC 1.1.12，通过独立账号连接服主的区服。支持 11 月 7 日和 11 月 25 日资源清单。
+Windows 10/11 x64 原生 WPF 登陆器。使用已安装的 TapTap PC 1.1.12，通过独立账号连接服主的区服。已实测国服 11 月 7 日、11 月 25 日两个批次的资源。
 
 [下载 Windows x64 登陆器（EXE）](https://github.com/YCLiuge/OF_SF_Launcher/releases/latest/download/OF_SF-Launcher-Windows-x64.exe) · [便携 ZIP 和 SHA-256 校验文件](https://github.com/YCLiuge/OF_SF_Launcher/releases/latest)
 
-`v1.1.12-r3` 支持汉字账号名，继承备份时会核对游戏内显示的 UID 和角色名，并恢复备份中可验证的鱼竿装备、耐久和宠物。游戏公告支持原版的三种配图高度。短暂掉线后，同一游戏进程可在两分钟内重连原角色。请同时更新区服与登陆器。Windows 文件版本为 `1.1.12.3`。
+`v1.1.12-r4` 按区服保留上次登录的账号，可勾选「记住密码」让当前 Windows 用户加密保存，取消勾选会立即清除已保存的密码。配套区服支持在登录页修改密码。Windows 文件版本为 `1.1.12.4`。
 
 ## 开始游玩
 
 双击 `OF_SF 登陆器.exe`，首次运行会在旁边的同名目录准备文件。升级时把 EXE 放到原版登陆器文件夹的上一级，可直接沿用连接、工作目录和已准备的游戏。也可以将 `OF_SF-Launcher-1.1.12-Windows-x64.zip` 完整解压并启动里面的 EXE。填写服主提供的 IP、域名或 HTTPS 地址，可指定端口，默认 **18443**。
 
-已有账号选择「登录」，新玩家点「注册」。「检查账号」通过区服的图片验证码后提示下一步。系统信任的证书直接验证，原来保存的连接和私有 CA 可以沿用。首次遇到私有证书时，请通过另一渠道与服主核对完整 SHA-256 指纹，再输入末 8 位确认。
+已有账号选择「登录」，新玩家点「注册」。「检查账号」通过区服的图片验证码后提示下一步。设置中可以选择游戏安装目录、渠道启动器目录或 TapTap、Steam 游戏库。登陆器会核对清单及程序指纹。B站和 Steam 渠道尚待实机验证。系统信任的证书直接验证，原来保存的连接和私有 CA 可以沿用。首次遇到私有证书时，请通过另一渠道与服主核对完整 SHA-256 指纹，再输入末 8 位确认。
 
 有全进度备份的玩家，请在首次进入游戏前点「继承已有存档」，预览 UID、角色名和可恢复内容，再确认。原游戏和本机区服副本各自保存设置；退出后可直接从 TapTap 玩官服。[玩家指南](client_tools/PLAYER_PATCH.md)
 
@@ -18,7 +18,7 @@ Windows 10/11 x64 原生 WPF 登陆器。使用已安装的 TapTap PC 1.1.12，�
 
 需要 Windows x64、Python 3.11+、.NET SDK **9.0.306**、.NET Framework 4.8 Developer Pack，以及配套服务端仓库中的运行时和国服资源。使用本地提供的 `poster112_绿荫小憩.png`，构建脚本会核验原画摘要。服务端资源和依赖的导入步骤见 [OF_SF 构建文档](https://github.com/YCLiuge/OF_SF/blob/main/tools/BUILD.md)。
 
-构建 `v1.1.12-r3` 请检出配套服务端版本。[OF_SF dcc0206](https://github.com/YCLiuge/OF_SF/commit/dcc02064006d86a3a70bc8d3e517bddcd06bfaeb)
+构建 `v1.1.12-r4` 请检出配套服务端版本。[OF_SF 0bca23b](https://github.com/YCLiuge/OF_SF/commit/0bca23b4631c58442049f6ef122d93545dd042a6)
 
 ```powershell
 py -3 tools/package_player_patch.py --server-checkout ../OF_SF --artwork "素材目录/poster112_绿荫小憩.png" --output dist/OF_SF-Launcher-1.1.12-Windows-x64.zip
