@@ -20,3 +20,4 @@ server-addresses.json
 client-config.json
 State/
 Client/
+!client_tools/certificates/sectigo-public-server-r46.crt

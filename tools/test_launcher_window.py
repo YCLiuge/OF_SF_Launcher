@@ -35,7 +35,23 @@ def trust_cases(root, temp, address, certificate):
         try:connect(scratch,{"address":address.replace("localhost","127.0.0.1"),"fingerprint":fingerprint})
         except ssl.SSLCertVerificationError:pass
         else:raise AssertionError("wrong hostname accepted")
-    print("PASS TLS default/explicit ports, IPv6, unsigned first contact, declined or changed fingerprint, verified pin reuse and hostname rejection",flush=True)
+    import player_connection
+    assert player_connection.public_root_path().is_file()
+    isolated = temp/"no system CAs"
+    isolated.mkdir()
+    with patch.object(ssl, "create_default_context", side_effect=lambda: ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)):
+        assert connect(isolated, {"address":address})["code"]=="fingerprint_required"
+        with patch.object(player_connection, "PUBLIC_ROOT", certificate), patch.object(player_connection, "PUBLIC_ROOT_SHA256", fingerprint):
+            result = connect(isolated, {"address":address})
+            assert result["ok"] and Path(result["caFile"]) == certificate.resolve()
+            try: connect(isolated,{"address":address.replace("localhost","127.0.0.1")})
+            except ssl.SSLCertVerificationError: pass
+            else: raise AssertionError("Bundled CA accepted the wrong hostname")
+        with patch.object(player_connection, "PUBLIC_ROOT", certificate):
+            try: player_connection.public_root_path()
+            except ValueError: pass
+            else: raise AssertionError("Changed bundled root accepted")
+    print("PASS system and bundled public roots, empty trust store, private CA confirmation, existing pins and wrong hostname",flush=True)
 
 
 def compile_probe(root):
@@ -60,7 +76,7 @@ def exercise_window(root,temp,cert,key):
         def handle(self):
             try:
                 preface=self.rfile.readline(64)
-            except ConnectionResetError:
+            except (ConnectionResetError, ConnectionAbortedError):
                 return  # A certificate-only probe may close without opening an account channel.
             if preface==b"OF-SF/1 ACCOUNT\n":
                 super().handle()

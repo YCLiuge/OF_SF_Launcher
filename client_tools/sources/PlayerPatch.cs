@@ -99,7 +99,7 @@ namespace OfSfPlayer {
             inSettings=show; C<StackPanel>("SettingsPanel").Visibility=show?Visibility.Visible:Visibility.Collapsed;
             C<StackPanel>("AccountPanel").Visibility=show?Visibility.Collapsed:Visibility.Visible;
             C<Button>("Options").Content=show?"返回":"设置";
-            C<TextBlock>("TrustLabel").Text=caOverride!=""?"已选择本地 CA 文件":connection!=null&&Get(connection,"caFile")!=""?"此区服使用已核对的专用证书。":"优先使用系统及已保存的可信证书。";
+            C<TextBlock>("TrustLabel").Text=Flag(connection,"bundledPublicCa")?"已通过登陆器内置的公有根证书验证。":caOverride!=""?"已选择本地 CA 文件":connection!=null&&Get(connection,"caFile")!=""?"此区服使用已核对的专用证书。":"优先使用系统及已保存的可信证书。";
         }
         void SetMode(bool reg,bool keep){
             if(!keep&&registering!=reg)ResetIdentity();

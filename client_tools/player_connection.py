@@ -56,6 +56,35 @@ def validated_leaf(address, der, folder):
     return name
 
 
+PUBLIC_ROOT = Path(__file__).with_name("certificates")/"sectigo-public-server-r46.crt"
+PUBLIC_ROOT_SHA256 = "7bb647a62aeeac88bf257aa522d01ffea395e0ab45c73f93f65654ec38f25a06"
+
+def public_root_path():
+    # The SHA-256 is published in Microsoft's CCADB inclusion report.
+    data = PUBLIC_ROOT.read_text(encoding="ascii")
+    if fingerprint(ssl.PEM_cert_to_DER_cert(data)) != PUBLIC_ROOT_SHA256:
+        raise ValueError("登陆器公有根证书摘要不匹配，请重新下载发行包。")
+    return PUBLIC_ROOT.resolve()
+
+def configured_public_root(ca):
+    if not ca:
+        return False
+    # Recognize our own saved path when a portable directory has been moved.
+    path = Path(ca)
+    return (path.name == PUBLIC_ROOT.name and path.parent.name == "certificates"
+            and path.parent.parent.name == "client_tools")
+
+def verify_public_root(address):
+    anchor = public_root_path()
+    try:
+        with PlayerTlsChannels(address, str(anchor)).verified_socket():
+            return str(anchor)
+    except ssl.SSLCertVerificationError as error:
+        if error.verify_code in (18, 19, 20, 21):
+            return ""
+        raise
+
+
 def connect(root, form):
     from private_account_api import PRIVATE_REALM, request
     address = entered_address(form["address"])
@@ -63,9 +92,11 @@ def connect(root, form):
     matches = [row for row in [stored, *stored.get("servers", [])] if isinstance(row,dict) and row.get("publicTls") == address]
     existing_ca = str(matches[0].get("caFile") or "") if matches else ""
     ca = form.get("caFile") or existing_ca
-    renew = form.get("renew") is True and bool(existing_ca) and PIN_FILE.fullmatch(Path(existing_ca).name)
+    renew = form.get("renew") is True and bool(existing_ca) and (PIN_FILE.fullmatch(Path(existing_ca).name) or configured_public_root(existing_ca))
     if renew and not form.get("caFile"):
         ca = ""
+    if configured_public_root(ca) and not Path(ca).exists():
+        ca = str(public_root_path())
     channels = PlayerTlsChannels(address, ca)
     try:
         with channels.verified_socket():
@@ -75,33 +106,35 @@ def connect(root, form):
             return {"ok":False,"code":"trust_changed","message":"此区服与已保存的证书不符。请联系服主核实；证书确已更新时可在设置中重新核对。"}
         if err.verify_code not in (18,19,20,21):
             raise
-        der = observed_leaf(channels)
-        digest = fingerprint(der)
-        requested = form.get("fingerprint", "")
-        if requested and requested != digest:
-            return {"ok":False,"code":"trust_changed","message":"两次连接看到的证书不同。请重新向服主核实。"}
-        with tempfile.TemporaryDirectory(prefix="ofsf-cert-") as tmp:
-            leaf = validated_leaf(address, der, Path(tmp))
-            if not requested:
-                return {"ok":False,"code":"fingerprint_required","fingerprint":digest,"address":address}
-            cert_folder = Path(os.environ.get("LOCALAPPDATA", Path.home()))/"OF_SF"/"Certificates"
-            cert_folder.mkdir(parents=True, exist_ok=True)
-            chosen = cert_folder/leaf.name
-            with tempfile.NamedTemporaryFile("wb", dir=cert_folder, delete=False) as out:
-                pending = Path(out.name)
-                out.write(leaf.read_bytes())
-            try:
-                os.replace(pending,chosen)
-            finally:
-                pending.unlink(missing_ok=True)
-            ca = str(chosen)
+        ca = verify_public_root(address)
+        if not ca:
+            der = observed_leaf(channels)
+            digest = fingerprint(der)
+            requested = form.get("fingerprint", "")
+            if requested and requested != digest:
+                return {"ok":False,"code":"trust_changed","message":"两次连接看到的证书不同。请重新向服主核实。"}
+            with tempfile.TemporaryDirectory(prefix="ofsf-cert-") as tmp:
+                leaf = validated_leaf(address, der, Path(tmp))
+                if not requested:
+                    return {"ok":False,"code":"fingerprint_required","fingerprint":digest,"address":address}
+                cert_folder = Path(os.environ.get("LOCALAPPDATA", Path.home()))/"OF_SF"/"Certificates"
+                cert_folder.mkdir(parents=True, exist_ok=True)
+                chosen = cert_folder/leaf.name
+                with tempfile.NamedTemporaryFile("wb", dir=cert_folder, delete=False) as out:
+                    pending = Path(out.name)
+                    out.write(leaf.read_bytes())
+                try:
+                    os.replace(pending,chosen)
+                finally:
+                    pending.unlink(missing_ok=True)
+                ca = str(chosen)
     config = {"publicTls":address,"caFile":ca}
     status, region = request(config, "GET", "/local/v1/region", max_bytes=32768)
     if status != 200 or region.get("realm") != PRIVATE_REALM:
         return {"ok":False,"code":"wrong_realm","message":"此端口未提供兼容的 OF_SF 玩家区服。"}
     remember(root,address,ca)
     features=region.get("account_features") or []
-    return {"ok":True, **config, "lookup":"captcha_lookup_v1" in features, "passwordChange":"password_change_v1" in features}
+    return {"ok":True, **config, "bundledPublicCa":configured_public_root(ca), "lookup":"captcha_lookup_v1" in features, "passwordChange":"password_change_v1" in features}
 
 
 def main():

@@ -74,6 +74,8 @@ def build(repo, output, *, artwork, server_checkout=None):
                         str(checkout/"client_tools/sources/ImportWindow.cs"),str(repo/"client_tools/sources/LauncherAccount.cs")],check=True)
         entries={TITLE:(exe,None),"玩家说明.md":(repo/"client_tools/PLAYER_PATCH.md",None)}
         entries.update({"client_tools/"+n:((repo if n in PLAYER_MODULES else checkout)/"client_tools"/n,None) for n in CLIENT})
+        root_cert = "client_tools/certificates/sectigo-public-server-r46.crt"
+        entries[root_cert]=(repo/root_cert,None)
         entries[TEMPLATE]=(checkout/TEMPLATE,inputs.TEMPLATE_SHA256)
         server=checkout/SERVER
         for key in ("of.py","LICENSE-of-ps.txt"):
