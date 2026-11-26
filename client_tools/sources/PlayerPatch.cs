@@ -48,7 +48,7 @@ namespace OfSfPlayer {
             }
             Click("LoginTab",()=>{SetPasswordMode(false);SetMode(false,false);}); Click("RegisterTab",()=>{SetPasswordMode(false);SetMode(true,false);});
             Click("Options",()=>ShowSettings(!inSettings)); Click("AcceptSettings",()=>Run("save"));
-            Click("SourceBrowse",()=>Browse("Source")); Click("BaseBrowse",()=>Browse("Work"));
+            Click("InspectSource",()=>Run("inspect")); Click("SourceBrowse",()=>Browse("Source")); Click("BaseBrowse",()=>Browse("Work"));
             Click("SelectCa",SelectCa); Click("Test",()=>Run("test")); Click("Reverify",()=>Run("renew"));
             Click("ClearWork",()=>Run("uninstall")); Click("CheckAccount",()=>Run("check"));
             Click("RefreshCaptcha",()=>Run("refresh")); Click("ImportSave",()=>Run("import"));

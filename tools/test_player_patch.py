@@ -83,6 +83,23 @@ def source_cases(temp):
         (second/"version").write_text("2025-03-21-17-15-05",encoding="ascii")
         denied(lambda:clients.installed_source(second),"2025-03-21")
         denied(lambda:clients.installed_source(unrelated),"GameAssembly.dll")
+        # A measured channel build can be reported before a private login is available.
+        observed=install(temp/"fixture-channel")
+        channel_build="2025-12-31-23-59-59"
+        (observed/"version").write_text(channel_build,encoding="ascii")
+        report={"id":"fixture","build":channel_build,"channel":"样本渠道","publisher_version":"1.2.3",
+                "files":{path:checksum(body) for path,body in assets.items()}}
+        with mock.object(clients,"channel_records",return_value=(report,)):
+            denied(lambda:clients.installed_source(observed),"已识别样本渠道 1.2.3")
+            from native_launch import local_start
+            scratch=temp/"uncreated-adapter"
+            denied(lambda:local_start(scratch,scratch,observed,"http://127.0.0.1:18881",{}),"此渠道尚未验证")
+            assert not scratch.exists()
+
+            (observed/"GameAssembly.dll").write_bytes(b"different")
+            denied(lambda:clients.installed_source(observed),channel_build)
+        assert not (observed/".of-private-client.json").exists()
+
         assert clients.installed_source(library)==game
 
         tap=temp/"TapTap"

@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT / "client_tools"))
 sys.path.insert(0,str(ROOT / "OverField-Server/app"))
 from player_tls_channels import player_address
-from prepare_client import installed_source, save
+from prepare_client import MANIFEST_DIR, installed_source, short_text, save
 from native_launch import changing, is_running, stop_owned
 
 STAMP = ".of-player-patch.json"
@@ -222,7 +222,7 @@ def uninstall(home):
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument("action",choices=("prepare","save","launch","relaunch","uninstall","watch"))
+    parser.add_argument("action",choices=("inspect","prepare","save","launch","relaunch","uninstall","watch"))
     parser.add_argument("--pid",type=int)
     args=parser.parse_args()
     known_root(ROOT)
@@ -230,6 +230,14 @@ def main():
         watcher(ROOT,args.pid)
         return
     data=json.loads(sys.stdin.buffer.read(24577))
+    if args.action=="inspect":
+        selected=data.get("source")
+        if not isinstance(selected,str) or not selected.strip():
+            raise ValueError("请选择游戏安装目录。")
+        source=installed_source(selected)
+        patch=short_text(source/MANIFEST_DIR/"PackageManifest_DefaultPackage.version")
+        print(f"已验证 TapTap 国服 PC 1.1.12，资源版本 {patch}，可进入所选区服。")
+        return
     prefs=read(ROOT/PREFS,{})
     if args.action=="uninstall":
         home=Path(prefs.get("home",str(ROOT))).resolve()

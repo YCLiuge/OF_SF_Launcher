@@ -49,6 +49,22 @@ class LauncherProbe {
             Assert(page.Title=="登陆器","title");
             Assert(UI<ComboBox>("Endpoint").Text.Contains("localhost")&&UI<TextBox>("Source").Text.EndsWith("Original"),"legacy migration");
             Click("Options");Assert(UI<StackPanel>("SettingsPanel").IsVisible,"settings");
+            string checkFolder=Environment.GetEnvironmentVariable("OF_TEST_CLIENT_INSPECT_DIR");
+            string expectedChannel=Environment.GetEnvironmentVariable("OF_TEST_CLIENT_INSPECT_LABEL");
+            string originalSource=UI<TextBox>("Source").Text;
+            string originalEndpoint=UI<ComboBox>("Endpoint").Text;
+            UI<ComboBox>("Endpoint").Text="";
+            UI<TextBox>("Source").Text=checkFolder??"";
+            Click("InspectSource");Ready();
+            Assert(Status().Contains(expectedChannel??"选择游戏"),"offline game version check: "+Status());
+            string otherFolder=Environment.GetEnvironmentVariable("OF_TEST_OTHER_CLIENT_DIR");
+            if(!String.IsNullOrEmpty(otherFolder)){
+                UI<TextBox>("Source").Text=otherFolder;
+                Click("InspectSource");Ready();
+                Assert(Status().Contains(Environment.GetEnvironmentVariable("OF_TEST_OTHER_CLIENT_LABEL")),"second client channel check: "+Status());
+            }
+            UI<TextBox>("Source").Text=originalSource;
+            UI<ComboBox>("Endpoint").Text=originalEndpoint;
             Click("Test");Ready();Assert(Status().Contains("连接成功"),"saved CA test: "+Status());
             Click("Options");Click("RegisterTab");Assert(UI<TextBox>("Nickname").IsVisible,"register tab");
             Assert(UI<CheckBox>("Remember").IsChecked!=true,"opt-in default");

@@ -143,6 +143,11 @@ namespace OfSfPlayer {
             if(busy)return;
             busy=true;view.IsEnabled=false;
             try{
+                if(action=="inspect"){
+                    Status("正在检查客户端版本和安装文件…");
+                    Status((await Execute("player_patch.py","inspect",new Data{{"source",TextOf("Source")}},false)).Trim());
+                    return;
+                }
                 if(action=="uninstall"){
                     if(MessageBox.Show(this,"清除本登陆器在此机器创建的游戏副本和连接设置？远程角色保存在服主服务器。","清除本机副本",MessageBoxButton.YesNo,MessageBoxImage.Question,MessageBoxResult.No)!=MessageBoxResult.Yes)return;
                     await Execute("player_patch.py","uninstall",new Data(),false);

@@ -55,6 +55,7 @@
           <StackPanel x:Name="SettingsPanel" Visibility="Collapsed">
             <TextBlock Text="登陆器设置" FontSize="26" FontWeight="SemiBold" Margin="0,3,0,5"/>
             <TextBlock Text="原游戏目录" Style="{StaticResource Field}"/><DockPanel><Button x:Name="SourceBrowse" DockPanel.Dock="Right" Content="浏览" Margin="5,0,0,0"/><TextBox x:Name="Source" AutomationProperties.Name="Windows 游戏目录"/></DockPanel>
+            <Button x:Name="InspectSource" Content="检查客户端版本" HorizontalAlignment="Left" Margin="0,5,0,0" Padding="8,4"/>
             <TextBlock Text="选择游戏已安装的 Windows 客户端目录。" TextWrapping="Wrap" Margin="0,4" Foreground="#53665B" FontSize="11"/>
             <TextBlock Text="工作目录（可选）" Style="{StaticResource Field}"/><DockPanel><Button x:Name="BaseBrowse" DockPanel.Dock="Right" Content="浏览" Margin="5,0,0,0"/><TextBox x:Name="Work" AutomationProperties.Name="工作目录"/></DockPanel>
             <TextBlock Text="与原游戏同盘时可留空，资源通过硬链接复用。" TextWrapping="Wrap" Margin="0,4" Foreground="#53665B" FontSize="11"/>

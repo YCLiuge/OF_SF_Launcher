@@ -80,7 +80,7 @@ def build(repo, output, *, artwork, server_checkout=None):
         server=checkout/SERVER
         for key in ("of.py","LICENSE-of-ps.txt"):
             entries[SERVER+"/"+key]=(server/key,None)
-        for path in [*(server/"app").rglob("*.py"), server/"app/notice_jpeg.ps1"]:
+        for path in [*(server/"app").rglob("*.py"), *(server/"app/client_builds").glob("*.json"), server/"app/notice_jpeg.ps1"]:
             if "__pycache__" not in path.parts:
                 entries[path.relative_to(checkout).as_posix()]=(path,None)
         for name, record in records.items():

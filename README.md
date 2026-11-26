@@ -4,21 +4,21 @@ Windows 10/11 x64 原生 WPF 登陆器。使用已安装的 TapTap PC 1.1.12，�
 
 [下载 Windows x64 登陆器（EXE）](https://github.com/YCLiuge/OF_SF_Launcher/releases/latest/download/OF_SF-Launcher-Windows-x64.exe) · [便携 ZIP 和 SHA-256 校验文件](https://github.com/YCLiuge/OF_SF_Launcher/releases/latest)
 
-`v1.1.12-r4` 按区服保留上次登录的账号，可勾选「记住密码」让当前 Windows 用户加密保存，取消勾选会立即清除已保存的密码。配套区服支持在登录页修改密码。Windows 文件版本为 `1.1.12.4`。
+r5 的设置页新增「检查客户端版本」，可以离线核对安装文件、渠道和版本，查看区服登录验证状态。账号与密码偏好按区服保存。
 
 ## 开始游玩
 
 双击 `OF_SF 登陆器.exe`，首次运行会在旁边的同名目录准备文件。升级时把 EXE 放到原版登陆器文件夹的上一级，可直接沿用连接、工作目录和已准备的游戏。也可以将 `OF_SF-Launcher-1.1.12-Windows-x64.zip` 完整解压并启动里面的 EXE。填写服主提供的 IP、域名或 HTTPS 地址，可指定端口，默认 **18443**。
 
-已有账号选择「登录」，新玩家点「注册」。「检查账号」通过区服的图片验证码后提示下一步。设置中可以选择游戏安装目录、渠道启动器目录或 TapTap、Steam 游戏库。登陆器会核对清单及程序指纹。B站和 Steam 渠道尚待实机验证。系统信任的证书直接验证。系统根证书尚未更新时，登陆器也可验证链至 Sectigo R46 的公开 TLS 证书，原来保存的连接和私有 CA 可以沿用。首次遇到私有证书时，请通过另一渠道与服主核对完整 SHA-256 指纹，再输入末 8 位确认。[Sectigo 公有根证书](https://www.sectigo.com/faqs/detail/Sectigo-Public-Intermediates-and-Roots)
+已有账号选择「登录」，新玩家点「注册」。「检查账号」通过区服的图片验证码后提示下一步。设置中可以选择游戏安装目录、渠道启动器目录或 TapTap、Steam 游戏库。登陆器会核对清单及程序指纹。已核对 B站国服 1.1.12.0、Steam 国际版 Build 26178963 的发行文件及各自 SDK。TapTap 国服已验证进图；B站及 Steam 的区服登录仍待验证。渠道登录与私服进图的验证状态以检查结果为准。系统信任的证书直接验证。系统根证书尚未更新时，登陆器也可验证链至 Sectigo R46 的公开 TLS 证书，原来保存的连接和私有 CA 可以沿用。首次遇到私有证书时，请通过另一渠道与服主核对完整 SHA-256 指纹，再输入末 8 位确认。[Sectigo 公有根证书](https://www.sectigo.com/faqs/detail/Sectigo-Public-Intermediates-and-Roots)
 
-有全进度备份的玩家，请在首次进入游戏前点「继承已有存档」，预览 UID、角色名和可恢复内容，再确认。原游戏和本机区服副本各自保存设置；退出后可直接从 TapTap 玩官服。[玩家指南](client_tools/PLAYER_PATCH.md)
+有全进度备份的玩家，请在首次进入游戏前点「继承已有存档」，预览 UID、角色名和可恢复内容，再确认。备份中可核实的个人签名也可恢复。原游戏和本机区服副本各自保存设置；退出后可直接从 TapTap 玩官服。[玩家指南](client_tools/PLAYER_PATCH.md)
 
 ## 构建
 
 需要 Windows x64、Python 3.11+、.NET SDK **9.0.306**、.NET Framework 4.8 Developer Pack，以及配套服务端仓库中的运行时和国服资源。使用本地提供的 `poster112_绿荫小憩.png`，构建脚本会核验原画摘要。服务端资源和依赖的导入步骤见 [OF_SF 构建文档](https://github.com/YCLiuge/OF_SF/blob/main/tools/BUILD.md)。
 
-构建 `v1.1.12-r4` 请检出配套服务端版本。[OF_SF 0bca23b](https://github.com/YCLiuge/OF_SF/commit/0bca23b4631c58442049f6ef122d93545dd042a6)
+构建本版请检出配套服务端版本。[OF_SF 02fb48a](https://github.com/YCLiuge/OF_SF/commit/02fb48a457dc0c8e51f1ef3cc9a7ee263e4777a5)
 
 ```powershell
 py -3 tools/package_player_patch.py --server-checkout ../OF_SF --artwork "素材目录/poster112_绿荫小憩.png" --output dist/OF_SF-Launcher-1.1.12-Windows-x64.zip
