@@ -4,11 +4,13 @@ Windows 10/11 x64 原生 WPF 登陆器。使用已安装的 TapTap PC 1.1.12，�
 
 [下载 Windows x64 登陆器（EXE）](https://github.com/YCLiuge/OF_SF_Launcher/releases/latest/download/OF_SF-Launcher-Windows-x64.exe) · [便携 ZIP 和 SHA-256 校验文件](https://github.com/YCLiuge/OF_SF_Launcher/releases/latest)
 
-r6 在「设置 → 游戏显示模式」中提供「跟随游戏设置」「无边框全屏」和 1280 × 720 窗口模式，保存后下次启动生效。遇到全屏黑屏时可选择窗口模式恢复。设置页的「检查客户端版本」可以离线核对渠道和版本。
+r7 可以继承全进度备份中的星云树节点、页面领奖和成就。连接旧区服时，导入预览会列出该区服将跳过的记录，可返回并更换区服。
+
+在「设置 → 游戏显示模式」中提供「跟随游戏设置」「无边框全屏」和 1280 × 720 窗口模式，保存后下次启动生效。遇到全屏黑屏时可选择窗口模式恢复。设置页的「检查客户端版本」可以离线核对渠道和版本。
 
 ## 开始游玩
 
-首次热更时，r6 登陆器和 r6 区服会为已启动的游戏进程保留一小时。r5 公网区服保留五分钟。超过时限请退出游戏，在登陆器重新登录。
+首次热更时，r6 起的登陆器和配套区服会为已启动的游戏进程保留一小时。r5 公网区服保留五分钟。超过时限请退出游戏，在登陆器重新登录。
 
 双击 `OF_SF 登陆器.exe`，首次运行会在旁边的同名目录准备文件。升级时把 EXE 放到原版登陆器文件夹的上一级，可直接沿用连接、工作目录和已准备的游戏。也可以将 `OF_SF-Launcher-1.1.12-Windows-x64.zip` 完整解压并启动里面的 EXE。填写服主提供的 IP、域名或 HTTPS 地址，可指定端口，默认 **18443**。
 
@@ -20,7 +22,7 @@ r6 在「设置 → 游戏显示模式」中提供「跟随游戏设置」「无
 
 需要 Windows x64、Python 3.11+、.NET SDK **9.0.306**、.NET Framework 4.8 Developer Pack，以及配套服务端仓库中的运行时和国服资源。使用本地提供的 `poster112_绿荫小憩.png`，构建脚本会核验原画摘要。服务端资源和依赖的导入步骤见 [OF_SF 构建文档](https://github.com/YCLiuge/OF_SF/blob/main/tools/BUILD.md)。
 
-构建本版请检出配套服务端版本。[OF_SF 704d683](https://github.com/YCLiuge/OF_SF/commit/704d6835454b7a3b8c8de96647b2123c4ed2f2f6)
+构建本版请检出配套服务端版本。[OF_SF 1ec21ce](https://github.com/YCLiuge/OF_SF/commit/1ec21ce3bb008a96dd9bb3907a78de688daf0851)
 
 ```powershell
 py -3 tools/package_player_patch.py --server-checkout ../OF_SF --artwork "素材目录/poster112_绿荫小憩.png" --output dist/OF_SF-Launcher-1.1.12-Windows-x64.zip

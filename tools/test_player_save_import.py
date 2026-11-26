@@ -16,6 +16,8 @@ def backup(folder):
     pet={"item_id":200001009,"instance_id":986654322,"name":"测试云朵","level":1,"nature_id":132,
          "integrity_id":100030,"integrity":[{"attr":{"v":5},"value":14}],"size":243,"weight":162840}
     data["decoded"]["pet"]={"name":"GetPetRsp","frames":[{"ok":True,"decoded":{"status":{"v":1},"total_num":3,"pets":[pet]}}]}
+    data["decoded"]["tree"]={"name":"AbilityBadgeListRsp","frames":[{"ok":True,"decoded":{"status":{"v":1},
+        "ability_badge_pages":[{"page":1,"active_box_ids":[31,31]}],"ability_badge_reward_achieve_ids":[50101010]}}]}
     (folder/"snapshot.json").write_text(json.dumps(data),encoding="utf8")
     (folder/"private-server-import.json").write_text(json.dumps({"irrelevant":marker}),encoding="utf8")
     archive=folder/"player.zip"
@@ -32,6 +34,7 @@ def privacy(accounts,folder):
     expected={"format":"of-sf-progress/1","player":[2,1,0],"heroes":[],"quests":[],"chapters":[],
               "achievements":[],"stacks":[],"outfits":[],"gear":[],"team":[0,0,0],"loadouts":[],
               "identity":{"uid":9067314,"nickname":"群星校验"},"profile_sign":{"text":"<#123ABC>雨后","hidden":True},
+              "badge_tree":{"pages":[[1,[31],False]],"claimed":[50101010],"achievements":[]},
               "pets":{"total":3,"capacity":0,"entries":[{"item_id":200001009,"level":1,"nature_id":132,
                       "integrity_id":100030,"star":0,"catch_scene_id":0,"catch_area_id":0,"catch_time":0,
                       "size":243,"weight":162840,"integrity":[[5,14]],"special_color":False,
@@ -39,7 +42,7 @@ def privacy(accounts,folder):
     def capture(config,verb,path,fields=None,max_bytes=0):
         if verb=="GET":
             assert path=="/local/v1/region" and fields is None
-            return 200,{"realm":accounts.PRIVATE_REALM,"save_import_features":["pets","field_progress","public_uid_label","profile_sign"]}
+            return 200,{"realm":accounts.PRIVATE_REALM,"save_import_features":["pets","field_progress","public_uid_label","profile_sign","badge_tree"]}
         assert verb=="POST" and path=="/local/v1/accounts/import-preview"
         assert fields=={"import_ticket":token,"data":dict(expected,identity={"public_label":9067314,"nickname":"群星校验"})}
         assert "unrelated-private-test-data" not in json.dumps(fields)
@@ -53,7 +56,7 @@ def privacy(accounts,folder):
         reply=accounts.import_backup("import-preview",{"path":str(bad),"import_ticket":token},{})
         assert reply["code"]=="invalid_backup"
         assert requested.call_count==8
-    baseline={k:v for k,v in expected.items() if k not in ("pets","profile_sign")}
+    baseline={k:v for k,v in expected.items() if k not in ("pets","profile_sign","badge_tree")}
     extended=dict(expected,field_progress={"scene":1,"devices":[[1,2]],"riddles":[[1,3]],"challenges":[],
                                            "collectibles":[42],"goals":[]})
     def legacy(config,verb,path,fields=None,max_bytes=0):
@@ -64,7 +67,8 @@ def privacy(accounts,folder):
     with patch.object(accounts,"request",side_effect=legacy),patch("save_import_data.project_file",return_value=extended.copy()):
         result=accounts.import_backup("import-preview",{"path":str(archive),"import_ticket":token},{})
         assert result["ok"] and any("3 只" in s and "1 只明细" in s for s in result["warnings"])
-        assert result["counts"]=={"旧服跳过的宠物明细":1,"旧服跳过的区域进度":3,"旧服跳过的个人签名":1}
+        assert result["counts"]=={"旧服跳过的宠物明细":1,"旧服跳过的区域进度":3,"旧服跳过的个人签名":1,"旧服跳过的星云树记录":2}
+        assert any("星云树节点" in s for s in result["warnings"])
         assert any("区域装置 1 条、谜题 1 条、收藏点 1 条" in s for s in result["warnings"])
         assert any("取消" in s for s in result["warnings"])
     with patch.object(accounts,"request",return_value=(200,{"realm":"unrelated"})) as rejected:
