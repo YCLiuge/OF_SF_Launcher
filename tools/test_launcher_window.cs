@@ -49,6 +49,11 @@ class LauncherProbe {
             Assert(page.Title=="登陆器","title");
             Assert(UI<ComboBox>("Endpoint").Text.Contains("localhost")&&UI<TextBox>("Source").Text.EndsWith("Original"),"legacy migration");
             Click("Options");Assert(UI<StackPanel>("SettingsPanel").IsVisible,"settings");
+            var display=UI<ComboBox>("DisplayMode");
+            Assert(display.Items.Count==3&&((ComboBoxItem)display.SelectedItem).Tag.ToString()=="game","legacy display default");
+            display.SelectedIndex=2;
+            var uiConfig=(System.Collections.IDictionary)page.GetType().GetMethod("Config",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(page,null);
+            Assert((string)uiConfig["display"]=="window","windowed recovery passed to game launcher");
             string checkFolder=Environment.GetEnvironmentVariable("OF_TEST_CLIENT_INSPECT_DIR");
             string expectedChannel=Environment.GetEnvironmentVariable("OF_TEST_CLIENT_INSPECT_LABEL");
             string originalSource=UI<TextBox>("Source").Text;

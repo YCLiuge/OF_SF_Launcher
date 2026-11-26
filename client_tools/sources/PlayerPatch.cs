@@ -171,6 +171,8 @@ namespace OfSfPlayer {
                 Data saved=File.Exists(file)?new JavaScriptSerializer().Deserialize<Data>(File.ReadAllText(file,Encoding.UTF8)):new Data();
                 if(!File.Exists(file))saved=LegacyPreset()??saved;
                 C<TextBox>("Source").Text=Get(saved,"source");C<TextBox>("Work").Text=Get(saved,"base");
+                foreach(ComboBoxItem mode in C<ComboBox>("DisplayMode").Items)
+                    if((string)mode.Tag==Get(saved,"display"))C<ComboBox>("DisplayMode").SelectedItem=mode;
                 object history;var box=C<ComboBox>("Endpoint");
                 if(saved.TryGetValue("servers",out history)&&history is IEnumerable)
                     foreach(object obj in (IEnumerable)history){var address=DisplayAddress(Get(obj as Data,"publicTls"));if(address!=""&&!box.Items.Contains(address))box.Items.Add(address);}

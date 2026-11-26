@@ -4,7 +4,7 @@ Windows 10/11 x64 原生 WPF 登陆器。使用已安装的 TapTap PC 1.1.12，�
 
 [下载 Windows x64 登陆器（EXE）](https://github.com/YCLiuge/OF_SF_Launcher/releases/latest/download/OF_SF-Launcher-Windows-x64.exe) · [便携 ZIP 和 SHA-256 校验文件](https://github.com/YCLiuge/OF_SF_Launcher/releases/latest)
 
-r5 的设置页新增「检查客户端版本」，可以离线核对安装文件、渠道和版本，查看区服登录验证状态。账号与密码偏好按区服保存。
+r6 在「设置 → 游戏显示模式」中提供「跟随游戏设置」「无边框全屏」和 1280 × 720 窗口模式，保存后下次启动生效。遇到全屏黑屏时可选择窗口模式恢复。设置页的「检查客户端版本」可以离线核对渠道和版本。
 
 ## 开始游玩
 
@@ -18,7 +18,7 @@ r5 的设置页新增「检查客户端版本」，可以离线核对安装文�
 
 需要 Windows x64、Python 3.11+、.NET SDK **9.0.306**、.NET Framework 4.8 Developer Pack，以及配套服务端仓库中的运行时和国服资源。使用本地提供的 `poster112_绿荫小憩.png`，构建脚本会核验原画摘要。服务端资源和依赖的导入步骤见 [OF_SF 构建文档](https://github.com/YCLiuge/OF_SF/blob/main/tools/BUILD.md)。
 
-构建本版请检出配套服务端版本。[OF_SF 02fb48a](https://github.com/YCLiuge/OF_SF/commit/02fb48a457dc0c8e51f1ef3cc9a7ee263e4777a5)
+构建本版请检出配套服务端版本。[OF_SF ad7c5ff](https://github.com/YCLiuge/OF_SF/commit/ad7c5ffc6dbaf9576b2e6e00ba72ba9d3ba0f03d)
 
 ```powershell
 py -3 tools/package_player_patch.py --server-checkout ../OF_SF --artwork "素材目录/poster112_绿荫小憩.png" --output dist/OF_SF-Launcher-1.1.12-Windows-x64.zip

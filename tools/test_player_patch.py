@@ -150,7 +150,10 @@ def source_cases(temp):
 def inside(root, temp):
     server=root/"OverField-Server"
     sys.path[:0]=[str(root/"client_tools"),str(server/"app"),str(server/"app/upstream")]
-    from native_launch import json_call, is_running
+    from native_launch import display_arguments,json_call, is_running
+    assert display_arguments("game")==["-window-mode","borderless"]
+    assert display_arguments("borderless")==["-window-mode","borderless","-screen-fullscreen","1"]
+    assert display_arguments("window")==["-screen-fullscreen","0","-screen-width","1280","-screen-height","720"]
     import player_patch as patch
     import private_account_api as accounts
     from player_tls_channels import player_address, PlayerTlsChannels

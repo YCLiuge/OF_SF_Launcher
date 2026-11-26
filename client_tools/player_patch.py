@@ -16,7 +16,7 @@ sys.path.insert(0,str(ROOT / "client_tools"))
 sys.path.insert(0,str(ROOT / "OverField-Server/app"))
 from player_tls_channels import player_address
 from prepare_client import MANIFEST_DIR, installed_source, short_text, save
-from native_launch import changing, is_running, stop_owned
+from native_launch import changing, display_arguments, is_running, stop_owned
 
 STAMP = ".of-player-patch.json"
 PREFS = "player-settings.json"
@@ -164,7 +164,7 @@ def launch(home, prefs, account, relaunch=False):
     python=home/"OverField-Server/runtime-win64/python.exe"
     command=[str(python),"-B",str(home/"client_tools/native_launch.py"),"relaunch" if relaunch else "launch",
              "--home",str(home),"--source",prefs["source"],"--endpoint",url,"--public-tls",prefs["publicTls"],
-             "--compact-only","--account-stdin"]
+             "--compact-only","--account-stdin","--display",prefs.get("display","game")]
     if prefs["caFile"]:
         command.extend(["--ca-file",prefs["caFile"]])
     env=dict(os.environ,OF_LOCAL_GAME_PORT=str(ports["game"]),PYTHONUTF8="1")
@@ -261,7 +261,9 @@ def main():
     old_home=Path(prefs.get("home",str(home))).resolve()
     if old_home!=home and (old_home/"Client").is_dir():
         raise ValueError("要迁移已准备好的工作目录，请先用「清除补丁」回收旧副本。")
-    record={"source":str(source),"base":str(data.get("base","")),"home":str(home),"publicTls":address,"caFile":ca_file}
+    display = data.get("display",prefs.get("display","game"))
+    display_arguments(display)
+    record={"source":str(source),"base":str(data.get("base","")),"home":str(home),"publicTls":address,"caFile":ca_file,"display":display}
     rows=[row for row in prefs.get("servers",[]) if row.get("publicTls")!=address]
     record["servers"]=[{"publicTls":address,"caFile":ca_file},*rows[:23]]
     if args.action=="save":

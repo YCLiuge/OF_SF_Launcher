@@ -51,6 +51,7 @@
             </StackPanel>
             <Button x:Name="Primary" Content="登录并进入游戏" Style="{StaticResource Primary}" Margin="0,16,0,0"/>
             <Button x:Name="ImportSave" Content="继承已有存档" Margin="0,6,0,1" MinHeight="32"/>
+            <TextBlock Text="首次进游戏时，NEKOTAN 渠道窗口可选「TapTap登录」。本页填写区服账号。" Margin="0,6,0,0" FontSize="11" TextWrapping="Wrap" Foreground="#53665B"/>
           </StackPanel>
           <StackPanel x:Name="SettingsPanel" Visibility="Collapsed">
             <TextBlock Text="登陆器设置" FontSize="26" FontWeight="SemiBold" Margin="0,3,0,5"/>
@@ -59,6 +60,12 @@
             <TextBlock Text="选择游戏已安装的 Windows 客户端目录。" TextWrapping="Wrap" Margin="0,4" Foreground="#53665B" FontSize="11"/>
             <TextBlock Text="工作目录（可选）" Style="{StaticResource Field}"/><DockPanel><Button x:Name="BaseBrowse" DockPanel.Dock="Right" Content="浏览" Margin="5,0,0,0"/><TextBox x:Name="Work" AutomationProperties.Name="工作目录"/></DockPanel>
             <TextBlock Text="与原游戏同盘时可留空，资源通过硬链接复用。" TextWrapping="Wrap" Margin="0,4" Foreground="#53665B" FontSize="11"/>
+            <TextBlock Text="游戏显示模式" Style="{StaticResource Field}"/>
+            <ComboBox x:Name="DisplayMode" SelectedIndex="0" AutomationProperties.Name="游戏显示模式" Padding="5,3">
+              <ComboBoxItem Tag="game">跟随游戏设置</ComboBoxItem>
+              <ComboBoxItem Tag="borderless">无边框全屏</ComboBoxItem>
+              <ComboBoxItem Tag="window">窗口（1280 × 720，黑屏恢复）</ComboBoxItem>
+            </ComboBox>
             <TextBlock Text="当前区服证书" Style="{StaticResource Field}"/><TextBlock x:Name="TrustLabel" Foreground="#40594B" TextWrapping="Wrap" Margin="0,2,0,6"/>
             <WrapPanel><Button x:Name="SelectCa" Content="选择 CA 文件" Margin="0,0,5,4"/><Button x:Name="Reverify" Content="重新核对证书" Margin="0,0,0,4"/></WrapPanel>
             <Button x:Name="Test" Content="测试区服连接" Margin="0,9,0,4"/>

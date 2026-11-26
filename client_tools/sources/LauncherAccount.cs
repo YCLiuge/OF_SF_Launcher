@@ -69,7 +69,11 @@ namespace OfSfPlayer {
             try{if(box.Text!=display)box.Text=display;}finally{normalizingEndpoint=false;}
             verifiedInput=Address;caOverride=Get(result,"caFile");connection=result;
         }
-        Data Config(){return new Data{{"source",TextOf("Source")},{"base",TextOf("Work")},{"publicTls",Get(connection,"publicTls")},{"caFile",Get(connection,"caFile")}};}
+        Data Config(){
+            var mode=(ComboBoxItem)C<ComboBox>("DisplayMode").SelectedItem;
+            return new Data{{"source",TextOf("Source")},{"base",TextOf("Work")},{"publicTls",Get(connection,"publicTls")},
+                            {"caFile",Get(connection,"caFile")},{"display",(string)mode.Tag}};
+        }
         async Task<Data> Api(string action,Data data){
             data["server"]=Config();data["action"]=action;
             try{return await Json("private_account_api.py",data);}finally{data.Clear();}
