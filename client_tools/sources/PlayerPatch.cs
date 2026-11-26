@@ -82,7 +82,7 @@ namespace OfSfPlayer {
             }));
             Closing+=delegate(object s,System.ComponentModel.CancelEventArgs e){if(busy)e.Cancel=true;};
             SetMode(false,true); if(!demo){Restore();FillAccount(RealmAccounts.Endpoint(Address));}
-            if(reconnect) Status("连接已中断。请重新登录当前区服以返回游戏。");
+            if(reconnect) Status("登录已过期或连接已中断。请重新登录当前区服以返回游戏。");
         }
         T C<T>(string key) where T:FrameworkElement{return (T)view.FindName(key);}
         void Click(string name, Action handler){C<Button>(name).Click+=delegate{handler();};}
