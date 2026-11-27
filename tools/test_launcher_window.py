@@ -31,7 +31,11 @@ def trust_cases(root, temp, address, certificate):
         assert result["code"]=="trust_changed" and not (scratch/"player-settings.json").exists()
         result=connect(scratch,{"address":address,"fingerprint":fingerprint})
         assert result["ok"] and Path(result["caFile"]).name=="of-leaf-"+fingerprint+".pem"
-        assert connect(scratch,{"address":address})["ok"]
+        from player_connection import inspect_catalog
+        with patch("player_connection.inspect_catalog", side_effect=AssertionError("Ordinary login read the catalog")):
+            assert connect(scratch,{"address":address})["ok"]
+        assert connect(scratch,{"address":address,"inspectCatalog":True})["catalogItems"] == 0
+        assert inspect_catalog(address, str(certificate)) == 0
         try:connect(scratch,{"address":address.replace("localhost","127.0.0.1"),"fingerprint":fingerprint})
         except ssl.SSLCertVerificationError:pass
         else:raise AssertionError("wrong hostname accepted")
@@ -124,6 +128,8 @@ def exercise_window(root,temp,cert,key):
                 assert new["code"]=="fingerprint_required" and new["fingerprint"]!=leaf["fingerprint"]
                 assert connect(rotation,{"address":url,"renew":True,"fingerprint":new["fingerprint"]})["ok"]
                 context.load_cert_chain(cert,key)
+            legacy = connect(rotation,{"address":url,"caFile":str(cert),"inspectCatalog":True})
+            assert legacy["ok"] and "catalogItems" not in legacy
             binary=compile_probe(root)
             # Only this in-process test issuer uses deterministic challenge text. The binary and player CLI are unmodified.
             answers=itertools.cycle("23456")

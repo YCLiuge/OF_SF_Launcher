@@ -238,6 +238,17 @@ def inside(root, temp):
                 else:raise AssertionError("untrusted TLS server or hostname accepted")
             from test_launcher_window import trust_cases, exercise_window
             trust_cases(root, temp, addr, cert)
+            from player_connection import inspect_catalog
+            import of_contracts
+            catalog = state / of_contracts.CONTENT_FILE
+            catalog.write_text(json.dumps({"contract_version":of_contracts.VERSION,"items":[
+                {"kind":"guide","id":"test.fish","title":"钓鱼","text":"在水边准备钓具。"}]},ensure_ascii=False),
+                encoding="utf-8")
+            assert inspect_catalog(addr,str(cert))==1
+            catalog.write_bytes(b"{}")
+            assert inspect_catalog(addr,str(cert)) is None
+            catalog.unlink()
+            assert inspect_catalog(addr,str(cert))==0
             if os.name=="nt":
                 exercise_window(root, temp, cert, key)
             assert accounts.handle({"server":config,"action":"register","username":"captcha_test","password":"public-qa-password","nickname":""})["code"]=="captcha_required"

@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT / "client_tools"))
 sys.path.insert(0,str(ROOT / "OverField-Server/app"))
 from player_tls_channels import player_address
-from prepare_client import MANIFEST_DIR, installed_source, short_text, save
+from prepare_client import MANIFEST_DIR, RecognizedChannelError, installed_source, short_text, save
 from native_launch import changing, display_arguments, is_running, stop_owned
 
 STAMP = ".of-player-patch.json"
@@ -234,7 +234,11 @@ def main():
         selected=data.get("source")
         if not isinstance(selected,str) or not selected.strip():
             raise ValueError("请选择游戏安装目录。")
-        source=installed_source(selected)
+        try:
+            source=installed_source(selected)
+        except RecognizedChannelError as recognized:
+            print(str(recognized))
+            return
         patch=short_text(source/MANIFEST_DIR/"PackageManifest_DefaultPackage.version")
         print(f"已验证 TapTap 国服 PC 1.1.12，资源版本 {patch}，可进入所选区服。")
         return

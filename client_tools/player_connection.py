@@ -1,5 +1,7 @@
 """Verify a selected realm and keep its trust material in this player's profile."""
+from contextlib import closing
 import hashlib
+import http.client
 import json
 import os
 from pathlib import Path
@@ -85,6 +87,46 @@ def verify_public_root(address):
         raise
 
 
+def read_catalog_page(channels, path, limit):
+    with channels.verified_socket() as stream:
+        with closing(http.client.HTTPConnection(channels.host, channels.port)) as client:
+            client.sock = stream
+            client.request("GET", path, headers={"Accept": "application/json", "Connection": "close"})
+            with client.getresponse() as response:
+                if response.status != 200:
+                    raise ValueError("Catalog endpoint unavailable")
+                raw = response.read(limit + 1)
+                if len(raw) > limit:
+                    raise ValueError("Catalog response exceeds limit")
+                return raw
+
+
+def inspect_catalog(address, ca):
+    import of_contracts as contracts
+    channels = PlayerTlsChannels(address, ca)
+    try:
+        for _ in range(2):  # A hot publication can land between the two reads.
+            meta = json.loads(read_catalog_page(channels, contracts.REALM_PATH, 16384).decode("utf-8"),
+                              object_pairs_hook=contracts.unique_keys)
+            if not isinstance(meta, dict) or meta.get("contract_id") != "ofsf.extensions.v1":
+                return None
+            if (meta.get("contract_version") != contracts.VERSION or meta.get("baseline") != "ofsf.native"
+                    or meta.get("client_profile") != "ofsf.pc.native.v1"
+                    or not isinstance(meta.get("capabilities"), list)
+                    or "content.catalog.v1" not in meta["capabilities"]
+                    or not isinstance(meta.get("content_manifest"), str)
+                    or not re.fullmatch(r"[0-9a-f]{64}", meta["content_manifest"])):
+                return None
+            raw = read_catalog_page(channels, contracts.CONTENT_PATH, contracts.MAX_BYTES)
+            if fingerprint(raw) == meta["content_manifest"]:
+                catalog = json.loads(raw.decode("utf-8"), object_pairs_hook=contracts.unique_keys)
+                contracts.validate(catalog)
+                return len(catalog["items"])
+    except (ValueError, OSError, http.client.HTTPException, RecursionError):
+        pass
+    return None
+
+
 def connect(root, form):
     from private_account_api import PRIVATE_REALM, request
     address = entered_address(form["address"])
@@ -134,7 +176,12 @@ def connect(root, form):
         return {"ok":False,"code":"wrong_realm","message":"此端口未提供兼容的 OF_SF 玩家区服。"}
     remember(root,address,ca)
     features=region.get("account_features") or []
-    return {"ok":True, **config, "bundledPublicCa":configured_public_root(ca), "lookup":"captcha_lookup_v1" in features, "passwordChange":"password_change_v1" in features}
+    detail = {}
+    if form.get("inspectCatalog") is True:
+        count = inspect_catalog(address, ca)
+        if count is not None:
+            detail["catalogItems"] = count
+    return {"ok":True, **detail, **config, "bundledPublicCa":configured_public_root(ca), "lookup":"captcha_lookup_v1" in features, "passwordChange":"password_change_v1" in features}
 
 
 def main():

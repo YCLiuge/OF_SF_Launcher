@@ -46,10 +46,10 @@ namespace OfSfPlayer {
             accept.Click+=delegate{if(accept.IsEnabled)box.DialogResult=true;};
             return box.ShowDialog()==true;
         }
-        async Task EnsureConnection(bool force,bool renew) {
+        async Task EnsureConnection(bool force,bool renew,bool inspectCatalog) {
             if(Address=="")throw new IOException("请填写服主提供的服务器 IP 或域名。");
             if(!force&&connection!=null&&verifiedInput==Address)return;
-            var input=new Data{{"address",Address},{"caFile",renew?"":caOverride},{"renew",renew}};
+            var input=new Data{{"address",Address},{"caFile",renew?"":caOverride},{"renew",renew},{"inspectCatalog",inspectCatalog}};
             Status("正在验证区服证书和账号服务…");
             var result=await Json("player_connection.py",input);
             if(Get(result,"code")=="fingerprint_required"){
@@ -159,8 +159,14 @@ namespace OfSfPlayer {
                 }
                 if(action=="renew"&&MessageBox.Show(this,"重新检查此地址的证书？如服主已更换私有证书，请先准备新的 SHA-256 指纹。","重新核对",MessageBoxButton.OKCancel,MessageBoxImage.Question,MessageBoxResult.Cancel)!=MessageBoxResult.OK)return;
                 if(action=="save"&&Address==""){ShowSettings(false);Status("请先填写服务器地址，再保存连接及目录。");return;}
-                await EnsureConnection(action=="test"||action=="renew",action=="renew");
-                if(action=="test"||action=="renew"){Status("连接成功，已验证此区服的证书和账号服务。");ShowSettings(true);return;}
+                await EnsureConnection(action=="test"||action=="renew",action=="renew",action=="test");
+                if(action=="test"||action=="renew"){
+                    string message="连接成功，区服账号服务可用。";
+                    if(action=="test")message+=connection.ContainsKey("catalogItems")
+                        ?" 已验证扩展目录（"+Get(connection,"catalogItems")+" 项）。"
+                        :" 扩展目录未验证。";
+                    Status(message);ShowSettings(true);return;
+                }
                 if(action=="save"){await Execute("player_patch.py","save",Config(),false);ShowSettings(false);Status("连接和目录已保存。");return;}
                 if(TextOf("Username")=="")throw new IOException("请输入区服账号。");
                 if(action=="change-password"){await UpdatePassword();return;}
