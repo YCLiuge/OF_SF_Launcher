@@ -11,7 +11,7 @@ import tempfile
 import zipfile
 
 REPO = Path(__file__).resolve().parents[1]
-PLAYER_MODULES = {"player_patch.py", "player_connection.py"}
+PLAYER_MODULES = {"player_patch.py", "player_connection.py", "player_mod.py"}
 
 
 def server_inputs(checkout):
@@ -48,7 +48,7 @@ OUTPUT="OF_SF-Launcher-1.1.12-Windows-x64.zip"
 MARKER=".of-player-patch.json"
 INDEX="player-files.json"
 CLIENT=("native_endpoint.py","client_media.py","native_launch.py","prepare_client.py","realm_addresses.py",
-        "private_account_api.py","private_channel_privacy.py","player_patch.py","player_connection.py")
+        "private_account_api.py","private_channel_privacy.py","player_patch.py","player_connection.py","player_mod.py")
 
 
 def build(repo, output, *, artwork, server_checkout=None):

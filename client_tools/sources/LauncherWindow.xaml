@@ -14,15 +14,15 @@
     <Style x:Key="Field" TargetType="TextBlock"><Setter Property="Margin" Value="0,10,0,5"/><Setter Property="FontSize" Value="12"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Foreground" Value="#41564D"/></Style>
     <Style x:Key="Primary" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="Background" Value="#126B57"/><Setter Property="Foreground" Value="White"/><Setter Property="FontSize" Value="15"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="MinHeight" Value="40"/></Style>
   </Grid.Resources>
-  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="400" MinWidth="355"/></Grid.ColumnDefinitions>
-  <Image x:Name="Artwork" Grid.ColumnSpan="2" Stretch="UniformToFill" IsHitTestVisible="False" AutomationProperties.Name="绿荫小憩"/>
+  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="438" MinWidth="370"/></Grid.ColumnDefinitions>
+  <Image x:Name="Artwork" Grid.Column="0" Stretch="UniformToFill" IsHitTestVisible="False" AutomationProperties.Name="绿荫小憩"/>
   <Grid IsHitTestVisible="False"><Grid.Background><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#2807110F" Offset="0"/><GradientStop Color="#0007110F" Offset=".23"/><GradientStop Color="#0007110F" Offset=".73"/><GradientStop Color="#A914261C" Offset="1"/></LinearGradientBrush></Grid.Background>
-    <StackPanel Margin="28,20,0,24" VerticalAlignment="Bottom" HorizontalAlignment="Left"><TextBlock Text="OF_SF" Foreground="White" FontFamily="Segoe UI" FontSize="40" FontWeight="Bold"/></StackPanel>
+    <StackPanel Margin="36,20,0,34" VerticalAlignment="Bottom" HorizontalAlignment="Left"><TextBlock Text="开放空间" FontSize="36" Foreground="White" FontWeight="SemiBold"/><TextBlock Text="OF_SF" Foreground="#F0F4E8" FontFamily="Segoe UI" FontSize="16" FontWeight="SemiBold"/></StackPanel>
   </Grid>
-  <Border Grid.Column="1" Background="#FBFCF9" Margin="0">
-    <Grid Margin="26,17,26,15"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <Border Grid.Column="1" Background="#F7F9F5" BorderBrush="#CCD9CF" BorderThickness="1,0,0,0">
+    <Grid Margin="29,22,29,18"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
       <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,8">
-        <TextBlock Text="OF_SF" FontFamily="Segoe UI" FontSize="13" FontWeight="Bold" Foreground="#467260" VerticalAlignment="Center"/>
+        <TextBlock Text="玩家登陆器" FontSize="13" FontWeight="SemiBold" Foreground="#446254" VerticalAlignment="Center"/>
         <Button x:Name="Options" DockPanel.Dock="Right" Content="设置" Padding="10,4" FontSize="12" AutomationProperties.Name="游戏和连接设置"/>
       </DockPanel>
       <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False" PanningMode="VerticalOnly">
@@ -32,7 +32,7 @@
             <UniformGrid Rows="1" Background="#E6EEE8" Margin="0,0,0,6"><Button x:Name="LoginTab" Content="登录" FontWeight="SemiBold"/><Button x:Name="RegisterTab" Content="注册" FontWeight="SemiBold"/></UniformGrid>
             <TextBlock Text="服务器地址" Style="{StaticResource Field}"/>
             <ComboBox x:Name="Endpoint" IsEditable="True" IsTextSearchEnabled="False" FontSize="14" Height="35" VerticalContentAlignment="Center" Padding="8,4" AutomationProperties.Name="服务器 IP 或域名"/>
-            <TextBlock Text="输入 IP 或域名，可加端口（默认 18443）。" Margin="0,4,0,0" FontSize="11" Foreground="#53665B"/>
+            <DockPanel Margin="0,6,0,2"><TextBlock DockPanel.Dock="Right" Text="默认端口 18443" FontSize="11" Foreground="#627168"/><StackPanel Orientation="Horizontal" ToolTip="延迟为当前电脑完成一次区服状态请求的时间，包含 TLS 握手。"><Ellipse x:Name="ProbeDot" Width="7" Height="7" Fill="#A5B3AB" Margin="1,0,6,0"/><TextBlock x:Name="ProbeText" Text="等待输入地址" Foreground="#405A4C" FontSize="12" AutomationProperties.LiveSetting="Polite"/></StackPanel></DockPanel>
             <TextBlock Text="账号" Style="{StaticResource Field}"/>
             <DockPanel><Button x:Name="CheckAccount" DockPanel.Dock="Right" Margin="6,0,0,0" Content="检查账号" Padding="9,4"/><TextBox x:Name="Username" MaxLength="64" AutomationProperties.Name="区服账号"/></DockPanel>
             <TextBlock x:Name="PasswordLabel" Text="密码" Style="{StaticResource Field}"/>
@@ -54,21 +54,29 @@
             <TextBlock Text="首次进游戏时，NEKOTAN 渠道窗口可选「TapTap登录」。本页填写区服账号。" Margin="0,6,0,0" FontSize="11" TextWrapping="Wrap" Foreground="#53665B"/>
           </StackPanel>
           <StackPanel x:Name="SettingsPanel" Visibility="Collapsed">
-            <TextBlock Text="登陆器设置" FontSize="26" FontWeight="SemiBold" Margin="0,3,0,5"/>
+            <TextBlock Text="登陆器设置" FontSize="28" FontWeight="SemiBold" Margin="0,3,0,12"/>
+            <Border Background="White" CornerRadius="10" BorderThickness="1" BorderBrush="#D8E1D8" Padding="14,7,14,14"><StackPanel>
             <TextBlock Text="原游戏目录" Style="{StaticResource Field}"/><DockPanel><Button x:Name="SourceBrowse" DockPanel.Dock="Right" Content="浏览" Margin="5,0,0,0"/><TextBox x:Name="Source" AutomationProperties.Name="Windows 游戏目录"/></DockPanel>
             <Button x:Name="InspectSource" Content="检查客户端版本" HorizontalAlignment="Left" Margin="0,5,0,0" Padding="8,4"/>
-            <TextBlock Text="选择游戏已安装的 Windows 客户端目录。" TextWrapping="Wrap" Margin="0,4" Foreground="#53665B" FontSize="11"/>
+
             <TextBlock Text="工作目录（可选）" Style="{StaticResource Field}"/><DockPanel><Button x:Name="BaseBrowse" DockPanel.Dock="Right" Content="浏览" Margin="5,0,0,0"/><TextBox x:Name="Work" AutomationProperties.Name="工作目录"/></DockPanel>
-            <TextBlock Text="与原游戏同盘时可留空，资源通过硬链接复用。" TextWrapping="Wrap" Margin="0,4" Foreground="#53665B" FontSize="11"/>
+            <TextBlock Text="游戏与登陆器同盘时可留空。分盘时请选择游戏所在盘。" TextWrapping="Wrap" Margin="0,4" Foreground="#53665B" FontSize="11"/>
             <TextBlock Text="游戏显示模式" Style="{StaticResource Field}"/>
             <ComboBox x:Name="DisplayMode" SelectedIndex="0" AutomationProperties.Name="游戏显示模式" Padding="5,3">
               <ComboBoxItem Tag="game">跟随游戏设置</ComboBoxItem>
               <ComboBoxItem Tag="borderless">无边框全屏</ComboBoxItem>
               <ComboBoxItem Tag="window">窗口（1280 × 720，黑屏恢复）</ComboBoxItem>
             </ComboBox>
-            <TextBlock Text="当前区服证书" Style="{StaticResource Field}"/><TextBlock x:Name="TrustLabel" Foreground="#40594B" TextWrapping="Wrap" Margin="0,2,0,6"/>
+            </StackPanel></Border>
+            <Border Background="White" CornerRadius="10" BorderThickness="1" BorderBrush="#D8E1D8" Padding="14" Margin="0,9,0,0"><StackPanel>
+              <DockPanel><Button x:Name="ModProject" DockPanel.Dock="Right" Content="上游项目 ↗" Background="Transparent" Padding="5,2" FontSize="11"/><TextBlock Text="Mod 扩展" FontSize="15" FontWeight="SemiBold"/></DockPanel>
+              <TextBlock Text="overfiled-mod · 区服内容目录" Margin="0,4,0,9" FontSize="12" Foreground="#53665B"/>
+              <WrapPanel><Button x:Name="InstallMod" Content="安装扩展" Margin="0,0,6,0"/><Button x:Name="LocalMod" Content="选择本地安装包"/></WrapPanel>
+            </StackPanel></Border>
+            <Border Background="White" CornerRadius="10" BorderThickness="1" BorderBrush="#D8E1D8" Padding="12" Margin="0,9,0,0"><Expander Header="连接与证书"><StackPanel Margin="0,8,0,0"><TextBlock x:Name="TrustLabel" Foreground="#40594B" TextWrapping="Wrap" Margin="0,2,0,6"/>
             <WrapPanel><Button x:Name="SelectCa" Content="选择 CA 文件" Margin="0,0,5,4"/><Button x:Name="Reverify" Content="重新核对证书" Margin="0,0,0,4"/></WrapPanel>
             <Button x:Name="Test" Content="测试区服连接" Margin="0,9,0,4"/>
+            </StackPanel></Expander></Border>
             <Button x:Name="AcceptSettings" Content="保存并返回" Style="{StaticResource Primary}" Margin="0,9,0,5"/>
             <Button x:Name="ClearWork" Content="清除本机游戏副本" HorizontalAlignment="Left" Background="Transparent" Foreground="#854B43" Padding="0,7"/>
           </StackPanel>

@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 
 def trust_cases(root, temp, address, certificate):
-    from player_connection import connect
+    from player_connection import connect, probe
     from player_tls_channels import entered_address
     for value,want in (("example.org","https://example.org:18443"),("https://example.org","https://example.org:18443"),
                        ("localhost:443","https://localhost"),("::1","https://[::1]:18443"),("[::1]:1324","https://[::1]:1324")):
@@ -24,6 +24,8 @@ def trust_cases(root, temp, address, certificate):
         else:raise AssertionError(bad)
     scratch=temp/"empty trust profile";scratch.mkdir()
     with patch.dict(os.environ,LOCALAPPDATA=str(scratch)):
+        assert probe(scratch, {"address":address}) == {"ok":False, "code":"untrusted"}
+        assert not (scratch/"player-settings.json").exists()
         result=connect(scratch,{"address":address})
         fingerprint=hashlib.sha256(ssl.PEM_cert_to_DER_cert(certificate.read_text("ascii"))).hexdigest()
         assert result["code"]=="fingerprint_required" and result["fingerprint"]==fingerprint and not (scratch/"player-settings.json").exists()
@@ -31,6 +33,14 @@ def trust_cases(root, temp, address, certificate):
         assert result["code"]=="trust_changed" and not (scratch/"player-settings.json").exists()
         result=connect(scratch,{"address":address,"fingerprint":fingerprint})
         assert result["ok"] and Path(result["caFile"]).name=="of-leaf-"+fingerprint+".pem"
+        before = (scratch/"player-settings.json").read_bytes()
+        observed = probe(scratch, {"address":address})
+        assert observed["ok"] and observed["latencyMs"] > 0
+        with patch("private_account_api.request",return_value=(200, {"realm":"another-service"})) as check:
+            assert probe(scratch, {"address":address}) == {"ok":False, "code":"wrong_realm"}
+            params, method, route = check.call_args.args
+            assert set(params) == {"publicTls","caFile"} and method == "GET" and route == "/local/v1/region"
+        assert (scratch/"player-settings.json").read_bytes() == before
         from player_connection import inspect_catalog
         with patch("player_connection.inspect_catalog", side_effect=AssertionError("Ordinary login read the catalog")):
             assert connect(scratch,{"address":address})["ok"]

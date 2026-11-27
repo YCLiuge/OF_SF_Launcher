@@ -10,6 +10,7 @@ import socket
 import ssl
 import sys
 import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/"OverField-Server"/"app"))
@@ -127,12 +128,39 @@ def inspect_catalog(address, ca):
     return None
 
 
+def selected_ca(root, address, override):
+    stored = settings(root)
+    matches = [row for row in [stored, *stored.get("servers", [])] if isinstance(row,dict) and row.get("publicTls") == address]
+    ca = override or (str(matches[0].get("caFile") or "") if matches else "")
+    return str(public_root_path()) if configured_public_root(ca) and not Path(ca).exists() else ca
+
+
+def probe(root, form):
+    from private_account_api import PRIVATE_REALM, request
+    address = entered_address(form["address"])
+    ca = selected_ca(root, address, form.get("caFile"))
+    def read(anchor):
+        start = time.perf_counter()
+        status, region = request({"publicTls": address, "caFile": anchor}, "GET", "/local/v1/region", max_bytes=32768)
+        elapsed = max(1, round((time.perf_counter() - start) * 1000))
+        if status != 200 or region.get("realm") != PRIVATE_REALM:
+            return {"ok": False, "code": "wrong_realm"}
+        return {"ok": True, "latencyMs": elapsed}
+    try:
+        return read(ca)
+    except ssl.SSLCertVerificationError as error:
+        if ca or error.verify_code not in (18, 19, 20, 21):
+            return {"ok": False, "code": "untrusted"}
+    try:
+        return read(str(public_root_path()))
+    except ssl.SSLCertVerificationError:
+        return {"ok": False, "code": "untrusted"}
+
+
 def connect(root, form):
     from private_account_api import PRIVATE_REALM, request
     address = entered_address(form["address"])
-    stored = settings(root)
-    matches = [row for row in [stored, *stored.get("servers", [])] if isinstance(row,dict) and row.get("publicTls") == address]
-    existing_ca = str(matches[0].get("caFile") or "") if matches else ""
+    existing_ca = selected_ca(root, address, "")
     ca = form.get("caFile") or existing_ca
     renew = form.get("renew") is True and bool(existing_ca) and (PIN_FILE.fullmatch(Path(existing_ca).name) or configured_public_root(existing_ca))
     if renew and not form.get("caFile"):
@@ -190,7 +218,7 @@ def main():
         raise ValueError("请输入有效的区服地址。")
     if form.get("fingerprint") and not re.fullmatch(r"[0-9a-f]{64}",form["fingerprint"]):
         raise ValueError("指纹格式无效。")
-    return connect(ROOT, form)
+    return probe(ROOT, form) if form.get("probe") is True else connect(ROOT, form)
 
 
 if __name__ == "__main__":

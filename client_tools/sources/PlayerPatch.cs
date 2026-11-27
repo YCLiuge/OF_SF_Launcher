@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows;
@@ -30,13 +31,14 @@ namespace OfSfPlayer {
         bool filling, changingPassword;
         string shownRealm="",filledUser="";
         DateTime playUntil, importUntil;
+        CancellationTokenSource pendingProbe;
 
         internal PlayerWindow(bool selectRealm, bool reconnecting, bool demonstration)
             : this(selectRealm,reconnecting,demonstration,@"Software\OF_SF\RealmAccounts") {}
         internal PlayerWindow(bool selectRealm, bool reconnecting, bool demonstration, string memoryBranch) {
             accounts=new RealmAccounts(memoryBranch);
             picker=selectRealm; reconnect=reconnecting; demo=demonstration;
-            Title="登陆器"; Width=1000; Height=646; MinWidth=780; MinHeight=540;
+            Title="登陆器"; Width=1040; Height=700; MinWidth=780; MinHeight=540;
             WindowStartupLocation=WindowStartupLocation.CenterScreen;
             var assembly=Assembly.GetExecutingAssembly();
             using(var input=assembly.GetManifestResourceStream("LauncherWindow.xaml"))view=(FrameworkElement)XamlReader.Load(input);
@@ -50,6 +52,8 @@ namespace OfSfPlayer {
             Click("Options",()=>ShowSettings(!inSettings)); Click("AcceptSettings",()=>Run("save"));
             Click("InspectSource",()=>Run("inspect")); Click("SourceBrowse",()=>Browse("Source")); Click("BaseBrowse",()=>Browse("Work"));
             Click("SelectCa",SelectCa); Click("Test",()=>Run("test")); Click("Reverify",()=>Run("renew"));
+            Click("ModProject",()=>OpenPage("https://github.com/jianx14/overfiled-mod"));
+            Click("InstallMod",()=>Run("mod")); Click("LocalMod",()=>Run("mod-local"));
             Click("ClearWork",()=>Run("uninstall")); Click("CheckAccount",()=>Run("check"));
             Click("RefreshCaptcha",()=>Run("refresh")); Click("ImportSave",()=>Run("import"));
             Click("Primary",()=>Run(changingPassword?"change-password":pending!=""?pending:registering?"register":"play"));
@@ -78,9 +82,12 @@ namespace OfSfPlayer {
                     caOverride="";InvalidateConnection();
                     var edit=args.OriginalSource as TextBox;
                     FillAccount(RealmAccounts.Endpoint(edit==null?Address:edit.Text));
+                    QueueProbe(edit==null?Address:edit.Text);
                 }
             }));
             Closing+=delegate(object s,System.ComponentModel.CancelEventArgs e){if(busy)e.Cancel=true;};
+            Closed+=delegate{if(pendingProbe!=null)pendingProbe.Cancel();};
+            Loaded+=delegate{QueueProbe(Address);};
             SetMode(false,true); if(!demo){Restore();FillAccount(RealmAccounts.Endpoint(Address));}
             if(reconnect) Status("登录已过期或连接已中断。请重新登录当前区服以返回游戏。");
         }
@@ -93,6 +100,42 @@ namespace OfSfPlayer {
             image.StreamSource=input;image.EndInit();image.Freeze();return image;
         }
         void Status(string value){C<TextBlock>("Status").Text=value;}
+        void OpenPage(string url){
+            try{Process.Start(new ProcessStartInfo(url){UseShellExecute=true});}
+            catch(System.ComponentModel.Win32Exception){Status("请在浏览器打开："+url);}
+        }
+        void ProbeStatus(string text,string color){
+            C<TextBlock>("ProbeText").Text=text;
+            C<System.Windows.Shapes.Ellipse>("ProbeDot").Fill=Brush(color);
+        }
+        async void QueueProbe(string address){
+            var previous=pendingProbe;pendingProbe=null;
+            if(previous!=null)previous.Cancel();
+            if(demo||!IsLoaded||RealmAccounts.Endpoint(address)==""){
+                ProbeStatus(address==""?"等待输入地址":"请输入有效的区服地址","#A5B3AB");return;
+            }
+            var probe=new CancellationTokenSource();
+            pendingProbe=probe;
+            try{
+                ProbeStatus("等待检测","#ACB6A9");
+                await Task.Delay(800,probe.Token);
+                ProbeStatus("正在连接…","#C38C43");
+                probe.CancelAfter(9000);
+                var payload=new Data{{"address",address},{"caFile",caOverride},{"probe",true}};
+                var raw=await Execute("player_connection.py","",payload,true,probe.Token);
+                probe.Token.ThrowIfCancellationRequested();
+                var result=new JavaScriptSerializer().Deserialize<Data>(raw);
+                if(Flag(result,"ok"))ProbeStatus("在线  ·  "+Get(result,"latencyMs")+" ms","#178766");
+                else if(Get(result,"code")=="untrusted")ProbeStatus("区服证书待核对","#AF7026");
+                else if(Get(result,"code")=="wrong_realm")ProbeStatus("此地址未提供 OF_SF 玩家服务","#B05E49");
+                else ProbeStatus("暂时无法连接","#B05E49");
+            }catch(Exception){
+                if(pendingProbe==probe&&IsLoaded)ProbeStatus("暂时无法连接","#B05E49");
+            }finally{
+                if(pendingProbe==probe)pendingProbe=null;
+                probe.Dispose();
+            }
+        }
         string TextOf(string id){return C<TextBox>(id).Text.Trim();}
         string Address { get { return C<ComboBox>("Endpoint").Text.Trim(); } }
         void ShowSettings(bool show){
@@ -205,7 +248,7 @@ namespace OfSfPlayer {
         }
         void SelectCa(){
             var box=new Microsoft.Win32.OpenFileDialog{Title="选择服主提供的 CA 证书",Filter="PEM 证书|*.pem;*.crt",CheckFileExists=true};
-            if(box.ShowDialog(this)==true){InvalidateConnection();caOverride=box.FileName;ShowSettings(true);}
+            if(box.ShowDialog(this)==true){InvalidateConnection();caOverride=box.FileName;ShowSettings(true);QueueProbe(Address);}
         }
         internal sealed class DialogOwner : Forms.IWin32Window {
             public IntPtr Handle {get;private set;}
@@ -215,7 +258,7 @@ namespace OfSfPlayer {
             string text=await Execute(module,"",data,true);
             return new JavaScriptSerializer().Deserialize<Data>(text);
         }
-        Task<string> Execute(string module,string action,Data data,bool json){
+        Task<string> Execute(string module,string action,Data data,bool json,CancellationToken cancellation=default(CancellationToken)){
             return Task.Run(delegate{
                 string py=Path.Combine(root,@"OverField-Server\runtime-win64\python.exe"), script=Path.Combine(root,"client_tools",module);
                 if(!File.Exists(py)||!File.Exists(script))throw new IOException("请先完整解压登陆器。");
@@ -223,11 +266,16 @@ namespace OfSfPlayer {
                     WorkingDirectory=root,UseShellExecute=false,CreateNoWindow=true,RedirectStandardInput=true,RedirectStandardOutput=true,RedirectStandardError=true,
                     StandardOutputEncoding=Encoding.UTF8,StandardErrorEncoding=Encoding.UTF8};
                 psi.EnvironmentVariables["PYTHONUTF8"]="1";
-                using(var process=Process.Start(psi)){
+                cancellation.ThrowIfCancellationRequested();
+                using(var process=Process.Start(psi))
+                using(cancellation.Register(delegate{
+                    try{if(!process.HasExited)process.Kill();}catch(InvalidOperationException){}catch(System.ComponentModel.Win32Exception){}
+                })){
                     var output=process.StandardOutput.ReadToEndAsync();var error=process.StandardError.ReadToEndAsync();
                     var bytes=Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(data));
                     try{process.StandardInput.BaseStream.Write(bytes,0,bytes.Length);}finally{Array.Clear(bytes,0,bytes.Length);process.StandardInput.Close();}
                     process.WaitForExit();
+                    cancellation.ThrowIfCancellationRequested();
                     if(process.ExitCode!=0)throw new IOException(json?"账号服务未完成请求。":error.Result.Trim());
                     return output.Result;
                 }

@@ -311,6 +311,9 @@ def verify(archive):
         for rel,expected in info["files"].items():
             assert hashlib.sha256((root/rel).read_bytes()).hexdigest()==expected,rel
         binary=root/"OverField-Server/runtime-win64/python.exe"
+        mod = subprocess.run([str(binary), "-B", str(root/"client_tools/player_mod.py")],
+                             input=json.dumps({"source": str(test/"no-install")}).encode(), capture_output=True, check=True)
+        assert json.loads(mod.stdout)["ok"] is False
         command=[str(binary),"-B",str(Path(__file__).resolve()),"--inside",str(root),str(test)]
         with subprocess.Popen(command) as worker:
             try:

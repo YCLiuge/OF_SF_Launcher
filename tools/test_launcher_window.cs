@@ -48,7 +48,15 @@ class LauncherProbe {
             }
             Assert(page.Title=="登陆器","title");
             Assert(UI<ComboBox>("Endpoint").Text.Contains("localhost")&&UI<TextBox>("Source").Text.EndsWith("Original"),"legacy migration");
+            var probeDeadline=DateTime.UtcNow.AddSeconds(12);
+            while(!UI<TextBlock>("ProbeText").Text.StartsWith("在线") && DateTime.UtcNow<probeDeadline)Pump();
+            Assert(UI<TextBlock>("ProbeText").Text.EndsWith(" ms"),"verified endpoint status and latency: "+UI<TextBlock>("ProbeText").Text);
+            var endpoint=UI<ComboBox>("Endpoint");string savedEndpoint=endpoint.Text;
+            endpoint.Text="http://wrong";Pump();
+            Assert(UI<TextBlock>("ProbeText").Text.Contains("有效"),"invalid address clears previous result");
+            endpoint.Text=savedEndpoint;
             Click("Options");Assert(UI<StackPanel>("SettingsPanel").IsVisible,"settings");
+            Assert(UI<Button>("InstallMod").IsVisible&&UI<Button>("LocalMod").IsVisible,"online and local mod installation");
             var display=UI<ComboBox>("DisplayMode");
             Assert(display.Items.Count==3&&((ComboBoxItem)display.SelectedItem).Tag.ToString()=="game","legacy display default");
             display.SelectedIndex=2;

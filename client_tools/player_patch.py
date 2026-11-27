@@ -32,24 +32,24 @@ def read(path, default=None):
 def known_root(root):
     doc = read(root/STAMP, {})
     if doc.get("product") != "OF_SF-Player-1.1.12" or not (root/MANIFEST).is_file():
-        raise ValueError("请选择已完整解压的 OF_SF 玩家补丁。")
+        raise ValueError("请选择已完整解压的 OF_SF 登陆器。")
 
 
 def regular_root(root):
     if root.is_symlink() or getattr(root,"is_junction",lambda:False)():
-        raise ValueError("请使用普通的玩家补丁目录。")
+        raise ValueError("请使用普通的登陆器目录。")
 
 
 def manifest_entries(root):
     known_root(root)
     data = read(root/MANIFEST)
     if not isinstance(data, dict) or data.get("version") != 1:
-        raise ValueError("玩家补丁文件清单损坏。")
+        raise ValueError("登陆器文件清单损坏。")
     for key, value in data["files"].items():
         rel = PurePosixPath(key)
         if (key != rel.as_posix() or rel.is_absolute() or ".." in rel.parts or
                 any(ch in key for ch in "\\:") or not isinstance(value,str) or len(value) != 64):
-            raise ValueError("玩家补丁清单包含无效文件。")
+            raise ValueError("登陆器清单包含无效文件。")
         yield key, value
 
 
@@ -96,13 +96,13 @@ def stage(root, home):
         if dst.is_file() and digest(dst)==expected:
             continue
         if digest(src)!=expected:
-            raise ValueError("补丁文件校验失败，请重新解压安装包。")
+            raise ValueError("登陆器文件校验失败，请重新解压安装包。")
         dst.parent.mkdir(parents=True, exist_ok=True)
         tmp = dst.with_name(".of-copy-"+uuid.uuid4().hex)
         try:
             shutil.copyfile(src,tmp)
             if digest(tmp)!=expected:
-                raise OSError("复制中的补丁文件校验失败。")
+                raise OSError("复制中的登陆器文件校验失败。")
             os.replace(tmp,dst)
         finally:
             tmp.unlink(missing_ok=True)
@@ -168,6 +168,7 @@ def launch(home, prefs, account, relaunch=False):
     if prefs["caFile"]:
         command.extend(["--ca-file",prefs["caFile"]])
     env=dict(os.environ,OF_LOCAL_GAME_PORT=str(ports["game"]),PYTHONUTF8="1")
+    env.update(OF_SF_REALM_URL=prefs["publicTls"], OF_SF_REALM_CA=prefs.get("caFile",""))
     try:
         result=subprocess.run(command,input=json.dumps(account).encode(),env=env,cwd=home,check=False,
                               creationflags=subprocess.CREATE_NO_WINDOW)
@@ -198,7 +199,7 @@ def uninstall(home):
     if not own_work(home):
         return
     if is_running(home):
-        raise ValueError("请先从游戏菜单正常退出此私服角色，再清除补丁。")
+        raise ValueError("请先从游戏菜单正常退出此私服角色，再清除本机游戏副本。")
     with changing(home):
         stop_gateway(home)
         config=read(home/"client-config.json",{})
@@ -251,7 +252,7 @@ def main():
         if home.exists() and (home/STAMP).is_file():
             uninstall(home)
         (ROOT/PREFS).unlink(missing_ok=True)
-        print("已停止本补丁的服务并清除游戏副本和本机设置。可删除解压目录及独立工作目录。")
+        print("已停止本机玩家网关并清除游戏副本和本机设置。可删除解压目录及独立工作目录。")
         return
     source=installed_source(data["source"])
     home=choose_home(ROOT,source,data.get("base",""))
@@ -264,7 +265,7 @@ def main():
         ca_file=str(ca)
     old_home=Path(prefs.get("home",str(home))).resolve()
     if old_home!=home and (old_home/"Client").is_dir():
-        raise ValueError("要迁移已准备好的工作目录，请先用「清除补丁」回收旧副本。")
+        raise ValueError("要迁移已准备好的工作目录，请先用「清除本机游戏副本」回收旧副本。")
     display = data.get("display",prefs.get("display","game"))
     display_arguments(display)
     record={"source":str(source),"base":str(data.get("base","")),"home":str(home),"publicTls":address,"caFile":ca_file,"display":display}

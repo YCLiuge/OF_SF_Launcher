@@ -4,7 +4,9 @@ Windows 10/11 x64 原生 WPF 登陆器。使用已安装的 TapTap PC 1.1.12，�
 
 [下载 Windows x64 登陆器（EXE）](https://github.com/YCLiuge/OF_SF_Launcher/releases/latest/download/OF_SF-Launcher-Windows-x64.exe) · [便携 ZIP 和 SHA-256 校验文件](https://github.com/YCLiuge/OF_SF_Launcher/releases/latest)
 
-r8 的「设置 → 测试区服连接」会验证账号服务，再通过统一协议核对扩展目录的版本、摘要和条目数。旧区服可继续登录。账号和进图票据沿用 OF_SF 的账号接口，目录读取只在手动测试时触发。[OF_SF 统一协议](https://github.com/YCLiuge/OF_SF/blob/50e10533f339d8d0d9c0cc025179cac3a8e33c92/OverField-Server/docs/统一协议.md)
+输入服务器地址后，登陆器会在停顿 0.8 秒后验证区服并显示响应时间（含 TLS 握手）。手动「设置 → 连接与证书 → 测试区服连接」还能检查统一协议目录。旧版区服仍可登录。[OF_Contracts](https://github.com/YCLiuge/OF_Contracts)
+
+「设置 → Mod 扩展」可为私服游戏副本安装上游宿主和独立区服目录，提供在线下载和本地 ZIP 两种方式。上游持续独立维护。首次使用需要在副本中安装 MelonLoader。[安装步骤](client_tools/PLAYER_PATCH.md#mod-扩展) · [上游项目](https://github.com/jianx14/overfiled-mod)
 
 在「设置 → 游戏显示模式」中提供「跟随游戏设置」「无边框全屏」和 1280 × 720 窗口模式，保存后下次启动生效。遇到全屏黑屏时可选择窗口模式恢复。设置页的「检查客户端版本」可以离线核对渠道和版本。
 
@@ -24,10 +26,11 @@ r8 的「设置 → 测试区服连接」会验证账号服务，再通过统一
 
 需要 Windows x64、Python 3.11+、.NET SDK **9.0.306**、.NET Framework 4.8 Developer Pack，以及配套服务端仓库中的运行时和国服资源。使用本地提供的 `poster112_绿荫小憩.png`，构建脚本会核验原画摘要。服务端资源和依赖的导入步骤见 [OF_SF 构建文档](https://github.com/YCLiuge/OF_SF/blob/main/tools/BUILD.md)。
 
-构建本版请检出配套服务端版本。[OF_SF 50e1053](https://github.com/YCLiuge/OF_SF/commit/50e10533f339d8d0d9c0cc025179cac3a8e33c92)
+构建本版请检出配套服务端版本。[OF_SF 965d5be](https://github.com/YCLiuge/OF_SF/commit/965d5be0140cc630fa952df58953e29aa40d60d8)
 
 ```powershell
 py -3 tools/package_player_patch.py --server-checkout ../OF_SF --artwork "素材目录/poster112_绿荫小憩.png" --output dist/OF_SF-Launcher-1.1.12-Windows-x64.zip
+py -3 tools/test_player_mod.py
 py -3 tools/test_player_patch.py --server-checkout ../OF_SF --archive dist/OF_SF-Launcher-1.1.12-Windows-x64.zip
 ```
 

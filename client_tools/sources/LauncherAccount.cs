@@ -143,10 +143,37 @@ namespace OfSfPlayer {
             if(C<CheckBox>("Remember").IsChecked==true)C<PasswordBox>("Secret").Password=next;
             Status("密码已修改，请用新密码重新登录。");
         }
+        async Task InstallMod(bool offline){
+            var files=new Data();
+            if(offline){
+                foreach(var pair in new[]{new[]{"package","选择独立的 OF_SF-ModCatalog-0.1.0-Windows.zip"},new[]{"host","选择上游的 mod.zip（已有宿主可取消）"}}){
+                    var box=new Microsoft.Win32.OpenFileDialog{Title=pair[1],Filter="ZIP 安装包|*.zip"};
+                    if(box.ShowDialog(this)==true)files[pair[0]]=box.FileName;
+                    else if(pair[0]=="package")return;
+                }
+                files["offline"]=true;
+            }
+            files["source"]=TextOf("Source");files["base"]=TextOf("Work");
+            Status("正在准备游戏副本并检查 Mod 文件…");
+            var result=await Json("player_mod.py",files);
+            if(Get(result,"code")=="loader_required"){
+                var target=Get(result,"client");
+                Status("安装 MelonLoader 后返回此处，再点安装。");
+                if(MessageBox.Show(this,"请选择这个私服游戏副本安装 MelonLoader：\n\n"+target+
+                    "\n\n复制路径并打开加载器的官方发行页？","安装 MelonLoader",MessageBoxButton.YesNo,MessageBoxImage.Information)==MessageBoxResult.Yes){
+                    Clipboard.SetText(target);
+                    OpenPage("https://github.com/LavaGang/MelonLoader.Installer/releases/latest");
+                }
+                return;
+            }
+            if(!Flag(result,"ok"))throw new IOException(Error(result));
+            Status("扩展已就绪。进入游戏后按 Alt+9，输入 ofcatalog 查看区服内容。");
+        }
         async void Run(string action) {
             if(busy)return;
             busy=true;view.IsEnabled=false;
             try{
+                if(action=="mod"||action=="mod-local"){await InstallMod(action=="mod-local");return;}
                 if(action=="inspect"){
                     Status("正在检查客户端版本和安装文件…");
                     Status((await Execute("player_patch.py","inspect",new Data{{"source",TextOf("Source")}},false)).Trim());
@@ -167,7 +194,7 @@ namespace OfSfPlayer {
                         :" 扩展目录未验证。";
                     Status(message);ShowSettings(true);return;
                 }
-                if(action=="save"){await Execute("player_patch.py","save",Config(),false);ShowSettings(false);Status("连接和目录已保存。");return;}
+                if(action=="save"){await Execute("player_patch.py","save",Config(),false);ShowSettings(false);QueueProbe(Address);Status("连接和目录已保存。");return;}
                 if(TextOf("Username")=="")throw new IOException("请输入区服账号。");
                 if(action=="change-password"){await UpdatePassword();return;}
                 if(action=="refresh"){if(pending!="")await NewChallenge(purpose,pending);return;}
