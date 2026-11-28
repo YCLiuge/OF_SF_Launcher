@@ -21,3 +21,7 @@ client-config.json
 State/
 Client/
 !client_tools/certificates/sectigo-public-server-r46.crt
+client_tools/channel_login/bin/
+client_tools/channel_login/obj/
+!client_tools/channel_login/OFChannelLogin.dll
+!client_tools/channel_login/MelonLoader.x64.zip

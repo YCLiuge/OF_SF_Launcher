@@ -210,6 +210,12 @@ namespace OfSfPlayer {
                     bool exists=Flag(result,"exists");ClearChallenge();SetMode(!exists,true);proof=Get(result,"account_proof");
                     Status(exists?"账号已注册，输入密码即可登录。":"账号可用，设置密码后即可注册。");return;
                 }
+                if(action=="play"){
+                    if(!Directory.Exists(TextOf("Source"))){ShowSettings(true);throw new IOException("选择游戏已安装的 Windows 客户端目录。");}
+                    Status("正在准备游戏文件，首次准备可能需要几分钟…");
+                    await Execute("player_patch.py","prepare",Config(),false);
+                    Status("游戏文件已就绪，正在验证区服账号…");
+                }
                 if(!await Auth(action))return;
                 if(action=="register"){Status("账号已创建。可先继承已有存档，或直接进入游戏。");return;}
                 if(action=="import"){
@@ -223,10 +229,7 @@ namespace OfSfPlayer {
                     Status("已返回登陆器，可继续进入游戏。");return;
                 }
                 var config=Config();
-                if(!Directory.Exists(TextOf("Source"))){ShowSettings(true);throw new IOException("选择游戏已安装的 Windows 客户端目录。");}
-                Status("正在检查游戏文件，首次准备可能需要几分钟…");
-                await Execute("player_patch.py","prepare",config,false);
-                config["account"]=new Data{{"slot",Get(session,"slot")},{"ticket",Get(session,"ticket")}};
+                config["account"]=new Data{{"slot",Get(session,"slot")},{"ticket",Get(session,"ticket")},{"nickname",Get(session,"nickname")}};
                 session=null;Status("正在启动原游戏客户端…");
                 await Execute("player_patch.py",picker?"relaunch":"launch",config,false);busy=false;Close();
             }

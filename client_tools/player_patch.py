@@ -158,13 +158,44 @@ def watcher(home, pid):
             time.sleep(1)
 
 
+def ascii_home(home):
+    """MelonLoader's native host cannot open UnityPlayer.dll under a non-ASCII path."""
+    home=Path(home).absolute()
+    if str(home).isascii():
+        return home
+    for letter in "ZYXWVUTSRQPONMLKJIHGFEDC":
+        drive=letter+":"
+        root=Path(drive+"/")
+        if root.exists():
+            continue
+        try:
+            subprocess.run(["subst",drive,str(home)],check=True,
+                           creationflags=subprocess.CREATE_NO_WINDOW)
+        except (OSError,subprocess.SubprocessError):
+            continue
+        if (root/"Client/launcher.exe").is_file():
+            return root
+    raise ValueError("游戏路径含中文，且无法创建临时盘符。请把登陆器放到纯英文路径。")
+
+
+def channel_login_ready(home):
+    client=home/"Client"
+    return ((client/"version.dll").is_file() and
+            (client/"MelonLoader/net6/MelonLoader.dll").is_file() and
+            (client/"Mods/OFChannelLogin.dll").is_file())
+
+
 def launch(home, prefs, account, relaunch=False):
+    home=ascii_home(home)
     ports=endpoints(home)
     url="http://127.0.0.1:"+str(ports["http"])
     python=home/"OverField-Server/runtime-win64/python.exe"
     command=[str(python),"-B",str(home/"client_tools/native_launch.py"),"relaunch" if relaunch else "launch",
              "--home",str(home),"--source",prefs["source"],"--endpoint",url,"--public-tls",prefs["publicTls"],
              "--compact-only","--account-stdin","--display",prefs.get("display","game")]
+    private_channel=bool(prefs.get("channelLogin",True) and channel_login_ready(home))
+    if private_channel:
+        command.append("--private-channel-login")
     if prefs["caFile"]:
         command.extend(["--ca-file",prefs["caFile"]])
     env=dict(os.environ,OF_LOCAL_GAME_PORT=str(ports["game"]),PYTHONUTF8="1")
@@ -289,6 +320,12 @@ def main():
                 return
             port=endpoints(home)["http"]
             result=prepare(source,home,"http://127.0.0.1:"+str(port),compact_only=True)
+        try:
+            from channel_login import ensure as ensure_channel_login
+            ensure_channel_login(home/"Client")
+            print("渠道登录模块已准备。")
+        except (OSError,ValueError,KeyError,TypeError) as error:
+            print("渠道登录模块安装失败，将使用官方渠道登录："+str(error),file=sys.stderr)
         print("文件已就绪，硬链接复用 %.2f GiB，副本独占 %.2f GiB。" %
               (result["sharedBytes"]/2**30,result["privateBytes"]/2**30))
     else:

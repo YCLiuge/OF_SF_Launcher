@@ -11,7 +11,7 @@ import tempfile
 import zipfile
 
 REPO = Path(__file__).resolve().parents[1]
-PLAYER_MODULES = {"player_patch.py", "player_connection.py", "player_mod.py"}
+PLAYER_MODULES = {"player_patch.py", "player_connection.py", "player_mod.py", "channel_login.py"}
 
 
 def server_inputs(checkout):
@@ -48,7 +48,8 @@ OUTPUT="OF_SF-Launcher-1.1.12-Windows-x64.zip"
 MARKER=".of-player-patch.json"
 INDEX="player-files.json"
 CLIENT=("native_endpoint.py","client_media.py","native_launch.py","prepare_client.py","realm_addresses.py",
-        "private_account_api.py","private_channel_privacy.py","player_patch.py","player_connection.py","player_mod.py")
+        "private_account_api.py","private_channel_privacy.py","player_patch.py","player_connection.py","player_mod.py",
+        "channel_login.py")
 
 
 def build(repo, output, *, artwork, server_checkout=None):
@@ -74,8 +75,18 @@ def build(repo, output, *, artwork, server_checkout=None):
                         str(checkout/"client_tools/sources/ImportWindow.cs"),str(repo/"client_tools/sources/LauncherAccount.cs")],check=True)
         entries={TITLE:(exe,None),"玩家说明.md":(repo/"client_tools/PLAYER_PATCH.md",None)}
         entries.update({"client_tools/"+n:((repo if n in PLAYER_MODULES else checkout)/"client_tools"/n,None) for n in CLIENT})
+        # Launcher-owned copies of the three-channel client policy and the two
+        # modules that consume it override the server checkout.
+        for name in ("prepare_client.py","native_launch.py","channel_policy.py"):
+            local=repo/"client_tools"/name
+            if local.is_file():entries["client_tools/"+name]=(local,None)
+        entries["client_tools/channel_login/OFChannelLogin.dll"]=(repo/"client_tools/channel_login/OFChannelLogin.dll",None)
+        entries["client_tools/channel_login/MelonLoader.x64.zip"]=(repo/"client_tools/channel_login/MelonLoader.x64.zip",None)
+        entries["client_tools/channel_login/ChannelLoginMod.cs"]=(repo/"client_tools/channel_login/ChannelLoginMod.cs",None)
+        entries["client_tools/channel_login/OFChannelLogin.csproj"]=(repo/"client_tools/channel_login/OFChannelLogin.csproj",None)
         root_cert = "client_tools/certificates/sectigo-public-server-r46.crt"
         entries[root_cert]=(repo/root_cert,None)
+        entries["client_tools/native_endpoint_templates.json.bz2"]=(checkout/"client_tools/native_endpoint_templates.json.bz2",None)
         entries[TEMPLATE]=(checkout/TEMPLATE,inputs.TEMPLATE_SHA256)
         server=checkout/SERVER
         for key in ("of.py","LICENSE-of-ps.txt"):
@@ -86,6 +97,10 @@ def build(repo, output, *, artwork, server_checkout=None):
         for name, record in records.items():
             if name.startswith(("resources/","runtime-win64/","vendor/common/","vendor/win64/")) or name==SERVER_TEMPLATE:
                 entries[SERVER+"/"+name]=(inputs.local_path(server,name),record["sha256"])
+        # Launcher-owned server channel policy and dispatch response overrides.
+        for name in ("game_dispatch.py","channel_policy.py"):
+            local=repo/"server_patch/OverField-Server/app"/name
+            if local.is_file():entries["OverField-Server/app/"+name]=(local,None)
         target=temp/"player.zip"
         per_file={}
         with zipfile.ZipFile(target,"w",compression=zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
