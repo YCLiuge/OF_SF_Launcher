@@ -145,24 +145,38 @@ def stop_gateway(home):
         stop_owned(home/"OverField-Server",marker.parent,marker,data)
 
 
-def watcher(home, pid):
+def watcher(home, pid, drive=None):
     while (home/".launcher.pid").is_file() and (home/".launcher.pid").read_text().strip()==str(pid) and is_running(home):
         time.sleep(1)
     for _ in range(45):
         try:
             with changing(home):
-                if not is_running(home):
+                stopped = not is_running(home)
+                if stopped:
                     stop_gateway(home)
+            if stopped:
+                remove_subst(drive)
             return
         except (ValueError,OSError):
             time.sleep(1)
+
+
+def remove_subst(drive):
+    """Remove only the temporary drive this launcher created for an ASCII path."""
+    if not drive:
+        return
+    try:
+        subprocess.run(["subst",drive,"/D"],check=False,
+                       creationflags=subprocess.CREATE_NO_WINDOW)
+    except (OSError,subprocess.SubprocessError):
+        pass
 
 
 def ascii_home(home):
     """MelonLoader's native host cannot open UnityPlayer.dll under a non-ASCII path."""
     home=Path(home).absolute()
     if str(home).isascii():
-        return home
+        return home,None
     for letter in "ZYXWVUTSRQPONMLKJIHGFEDC":
         drive=letter+":"
         root=Path(drive+"/")
@@ -174,7 +188,8 @@ def ascii_home(home):
         except (OSError,subprocess.SubprocessError):
             continue
         if (root/"Client/launcher.exe").is_file():
-            return root
+            return root,drive
+        remove_subst(drive)
     raise ValueError("游戏路径含中文，且无法创建临时盘符。请把登陆器放到纯英文路径。")
 
 
@@ -186,7 +201,7 @@ def channel_login_ready(home):
 
 
 def launch(home, prefs, account, relaunch=False):
-    home=ascii_home(home)
+    home,drive=ascii_home(home)
     ports=endpoints(home)
     url="http://127.0.0.1:"+str(ports["http"])
     python=home/"OverField-Server/runtime-win64/python.exe"
@@ -208,12 +223,16 @@ def launch(home, prefs, account, relaunch=False):
     finally:
         if is_running(home):
             pid=(home/".launcher.pid").read_text().strip()
-            subprocess.Popen([str(python),"-B",str(home/"client_tools/player_patch.py"),"watch","--pid",pid],
-                             cwd=home,stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
-                             close_fds=True,creationflags=subprocess.CREATE_NO_WINDOW)
+            watch=[str(python),"-B",str(home/"client_tools/player_patch.py"),"watch","--pid",pid]
+            if drive:
+                watch.extend(["--drive",drive])
+            subprocess.Popen(watch,cwd=home,stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL,close_fds=True,
+                             creationflags=subprocess.CREATE_NO_WINDOW)
         else:
             with changing(home):
                 stop_gateway(home)
+            remove_subst(drive)
 
 
 def remove_workspace_tree(dest):
@@ -256,10 +275,11 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("action",choices=("inspect","prepare","save","launch","relaunch","uninstall","watch"))
     parser.add_argument("--pid",type=int)
+    parser.add_argument("--drive")
     args=parser.parse_args()
     known_root(ROOT)
     if args.action=="watch":
-        watcher(ROOT,args.pid)
+        watcher(ROOT,args.pid,args.drive)
         return
     data=json.loads(sys.stdin.buffer.read(24577))
     if args.action=="inspect":
